@@ -216,7 +216,6 @@
 <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script> <!-- Vue -->
 <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/index.js"></script> <!-- ElementUI -->
 <script>
-  import { maxUploadSize } from './functions/upload';
   new Vue({
     el: '#app',
     data: {
@@ -236,6 +235,11 @@
         image: '图片',
         video: '视频',
         audio: '音频'
+      },
+      uploadConfig: {
+        maxSize: 30 * 1024 * 1024,  // 最大上传30MB
+        validTypes: ['image/', 'video/', 'audio/'],
+        maxConcurrent: 3
       },
       tableData: [],
       search: '',
@@ -366,11 +370,7 @@
         // telegram-bot可分发的最大文件大小（20MB）
         // 大于20MB虽然能够成功上传，但无法获取文件链接
         // 这里设置上传阈值为30MB，并使用Cloudinary进行压缩到小于20MB
-        const config = {
-          maxSize: maxUploadSize,
-          validTypes: ['image/', 'video/', 'audio/'],
-          maxConcurrent: 3
-        };
+        const config = this.uploadConfig;
         // 文件分类
         const { valid, errors } = files.reduce((acc, file) => {
           const isValidType = config.validTypes.some(type => file.type.startsWith(type));
