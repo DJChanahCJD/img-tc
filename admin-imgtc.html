@@ -81,7 +81,7 @@
                 <el-dropdown-menu slot="dropdown">
                   <el-dropdown-item command="selectAllInPage"><i class="fas fa-check-square"></i> 全选当前页</el-dropdown-item>
                   <el-dropdown-item command="checkBrokenFiles"><i class="fas fa-wrench"></i> 检测失效文件</el-dropdown-item>
-                  <el-dropdown-item command="editWebsite"><i class="fas fa-edit"></i> 编辑快捷方式</el-dropdown-item>
+                  <el-dropdown-item command="editWebsites"><i class="fas fa-edit"></i> 编辑快捷方式</el-dropdown-item>
                 </el-dropdown-menu>
               </el-dropdown>
             </el-tooltip>
@@ -266,7 +266,7 @@
       quickWebsites: [
         { name: '原版后台', url: './admin.html', icon: 'fa-suitcase' },
         { name: '瀑布流', url: './admin-waterfall.html', icon: 'fa-wind' },
-        { name: 'FreeConvert', url: 'https://www.freeconvert.com/', icon: 'fa-file' },
+        { name: 'FreeConvert', url: 'https://www.freeconvert.com/zh/video-compressor', icon: 'fa-file' },
         { name: 'GitHub', url: 'https://github.com/', icon: 'fa-github' },
       ],
     },
@@ -606,6 +606,7 @@
           case 'unblock': this.handleBatchBlockOrUnblock('White'); break;
         }
       },
+      // 工具相关
       handleToolkit(command) {
         switch (command) {
           case 'selectAllInPage':
@@ -614,12 +615,11 @@
           case 'checkBrokenFiles':
             this.checkBrokenFiles();
             break;
-          case 'editWebsite':
-            this.editWebsite();
+          case 'editWebsites':
+            this.editWebsites();
             break;
         }
       },
-      // 工具相关
       switchFileType(type) {  // 切换文件类型
         this.fileType = type;
         this.currentPage = 1;
@@ -676,10 +676,7 @@
         });
       },
       // 处理网站点击
-      handleWebsite(url) {
-        window.open(url, '_blank');
-      },
-
+      handleWebsite(url) { window.open(url, '_blank'); },
       // 编辑快捷方式
       editWebsites() {
         const websiteText = this.quickWebsites
