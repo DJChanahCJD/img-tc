@@ -209,10 +209,7 @@ async function processMediaWithCloudinary(file, type, config, env) {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                chat_id: env.TG_Chat_ID,
-                text: `压缩成功: ${JSON.stringify(response)}`,
-            }),
+            body: JSON.stringify(response),
         });
 
         if (!response.ok) {
