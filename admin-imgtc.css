@@ -434,3 +434,7 @@ body {
     gap: 16px;
   }
 }
+
+.el-textarea__inner{
+  height: 240px !important;
+}
