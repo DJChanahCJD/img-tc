@@ -151,15 +151,36 @@ function getFileId(response) {
 
 // 处理媒体文件
 async function processMediaWithCloudinary(file, type, config, env) {
+    // 创建表单数据
+    const formData = createFormData(file, type, config);
+
+    try {
+        // 上传到 Cloudinary 并获取压缩后的文件
+        const compressedFile = await uploadToCloudinary(formData, type, config, file);
+
+        // 记录压缩结果
+        await logCompressionResult(compressedFile, env);
+
+        // 清理 Cloudinary 上的临时文件
+        await cleanupCloudinaryFile(config, compressedFile.publicId, compressedFile.resourceType);
+
+        return compressedFile.file;
+
+    } catch (error) {
+        console.error(`文件压缩失败:`, error);
+        throw error;
+    }
+}
+
+// 创建上传表单数据
+function createFormData(file, type, config) {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', config.uploadPreset);
-
-    // 添加时间戳和唯一标识符以防止缓存问题
     formData.append('timestamp', Date.now());
     formData.append('public_id', `${type}_${Date.now()}`);
 
-    // 压缩配置
+    // 压缩参数配置
     const compressionParams = {
         image: {
             quality: 'auto:eco',
@@ -195,42 +216,70 @@ async function processMediaWithCloudinary(file, type, config, env) {
         formData.append(key, value);
     });
 
-    try {
-        const response = await fetch(
-            `https://api.cloudinary.com/v1_1/${config.cloudName}/${type === 'image' ? 'image' : 'video'}/upload`,
-            {
-                method: 'POST',
-                body: formData,
-            }
-        );
+    return formData;
+}
 
+// 上传到 Cloudinary
+async function uploadToCloudinary(formData, type, config, originalFile) {
+    const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${config.cloudName}/${type === 'image' ? 'image' : 'video'}/upload`,
+        {
+            method: 'POST',
+            body: formData,
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`压缩失败: ${errorData.error?.message || response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    const compressedResponse = await fetch(responseData.secure_url);
+    const compressedBlob = await compressedResponse.blob();
+
+    return {
+        file: new File([compressedBlob], originalFile.name, {
+            type: originalFile.type,
+            lastModified: Date.now(),
+        }),
+        publicId: responseData.public_id,
+        resourceType: responseData.resource_type
+    };
+}
+
+// 记录压缩结果
+async function logCompressionResult(compressedFile, env) {
+    try {
         await fetch('https://api.telegram.org/bot' + env.TG_Bot_Token + '/sendMessage', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(response),
+            body: JSON.stringify(compressedFile.file),
         });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`压缩失败: ${errorData.error?.message || response.statusText}`);
-        }
-        const data = await response.json();
-        const processedResponse = await fetch(data.secure_url);
-        if (!processedResponse.ok) {
-            throw new Error('Failed to download processed file');
-        }
-
-        const processedBlob = await processedResponse.blob();
-
-        return new File([processedBlob], file.name, {
-            type: file.type,
-            lastModified: Date.now(),
-        });
-
     } catch (error) {
-        console.error(`文件压缩失败:`, error);
-        throw error;
+        console.error('记录压缩结果失败:', error);
+    }
+}
+
+// 清理 Cloudinary 临时文件
+async function cleanupCloudinaryFile(config, publicId, resourceType) {
+    try {
+        await fetch(
+            `https://api.cloudinary.com/v1_1/${config.cloudName}/delete_by_token`,
+            {
+                method: 'POST',
+                body: JSON.stringify({
+                    public_id: publicId,
+                    type: resourceType,
+                }),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+    } catch (error) {
+        console.error('清理临时文件失败:', error);
     }
 }
