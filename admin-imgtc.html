@@ -63,12 +63,25 @@
                 </el-dropdown-menu>
               </el-dropdown>
             </el-tooltip>
+            <el-tooltip content="快捷方式" placement="bottom">
+              <el-dropdown @command="handleWebsite">
+                <span class="el-dropdown-link"><i class="fas fa-link"></i></span>
+                <el-dropdown-menu slot="dropdown">
+                  <template v-for="site in quickWebsites">
+                    <el-dropdown-item :command="site.url">
+                      <i :class="['fas', site.icon]"></i> {{ site.name }}
+                    </el-dropdown-item>
+                  </template>
+                </el-dropdown-menu>
+              </el-dropdown>
+            </el-tooltip>
             <el-tooltip content="工具箱" placement="bottom">
               <el-dropdown @command="handleToolkit" :hide-on-click="false">
                 <span class="el-dropdown-link"><i class="fas fa-toolbox"></i></span>
                 <el-dropdown-menu slot="dropdown">
                   <el-dropdown-item command="selectAllInPage"><i class="fas fa-check-square"></i> 全选当前页</el-dropdown-item>
                   <el-dropdown-item command="checkBrokenFiles"><i class="fas fa-wrench"></i> 检测失效文件</el-dropdown-item>
+                  <el-dropdown-item command="editWebsite"><i class="fas fa-edit"></i> 编辑快捷方式</el-dropdown-item>
                 </el-dropdown-menu>
               </el-dropdown>
             </el-tooltip>
@@ -186,7 +199,7 @@
                       <i :class="item.selected ? 'fas fa-square-check selected' : 'far fa-square'"></i>
                     </button>
                     <button class="control-btn" @click.stop="handleCopy(index, item.name)">
-                      <i class="fas fa-link"></i>
+                      <i class="fas fa-copy"></i>
                     </button>
                     <button class="control-btn" @click.stop="handleDelete(index, item.name)">
                       <i class="fas fa-trash-alt"></i>
@@ -249,6 +262,13 @@
       sortOption: 'dateDesc',
       filterOption: 'all',
       fileType: 'image',
+
+      quickWebsites: [
+        { name: '原版后台', url: './admin.html', icon: 'fa-suitcase' },
+        { name: '瀑布流', url: './admin-waterfall.html', icon: 'fa-wind' },
+        { name: 'FreeConvert', url: 'https://www.freeconvert.com/', icon: 'fa-file' },
+        { name: 'GitHub', url: 'https://github.com/', icon: 'fa-github' },
+      ],
     },
     computed: {
       filteredTableData() {
@@ -588,8 +608,15 @@
       },
       handleToolkit(command) {
         switch (command) {
-          case 'checkBrokenFiles': this.checkBrokenFiles(); break;
-          case 'selectAllInPage': this.selectAllInPage(); break;
+          case 'selectAllInPage':
+            this.selectAllInPage();
+            break;
+          case 'checkBrokenFiles':
+            this.checkBrokenFiles();
+            break;
+          case 'editWebsite':
+            this.editWebsite();
+            break;
         }
       },
       // 工具相关
@@ -648,6 +675,39 @@
           }
         });
       },
+      // 处理网站点击
+      handleWebsite(url) {
+        window.open(url, '_blank');
+      },
+
+      // 编辑快捷方式
+      editWebsites() {
+        const websiteText = this.quickWebsites
+          .map(site => `${site.name}|${site.url}|${site.icon}`)
+          .join('\n');
+
+        this.$prompt('每行一个网站（格式：名称|网址|<a href="https://fontawesome.com/v6/search?m=free" target="_blank">图标</a>）', '编辑快捷方式', {
+          inputType: 'textarea',
+          inputValue: websiteText,
+          confirmButtonText: '确定',
+          cancelButtonText: '取消'
+        }).then(({ value }) => {
+          try {
+            const newSites = value.split('\n')
+              .filter(line => line.trim())
+              .map(line => {
+                const [name, url, icon = 'fa-link'] = line.split('|');
+                if (!name || !url) throw new Error('格式错误');
+                return { name, url, icon };
+              });
+            this.quickWebsites = newSites;
+            localStorage.setItem('quickWebsites', JSON.stringify(newSites));
+            this.$message.success('保存成功');
+          } catch (err) {
+            this.$message.error('格式错误，请检查输入');
+          }
+        }).catch(() => {});
+      }
     },
     mounted() {
       window.addEventListener('resize', this.calculatePageSize);
@@ -678,6 +738,12 @@
           this.switchFileType(this.fileType);
         })
         .catch(() => this.$message.error('同步数据时出错，请检查网络连接'));
+
+      // 加载保存的快捷网站列表
+      const savedWebsites = localStorage.getItem('quickWebsites');
+      if (savedWebsites) {
+        this.quickWebsites = JSON.parse(savedWebsites);
+      }
     },
     beforeDestroy() {
       window.removeEventListener('resize', this.calculatePageSize);

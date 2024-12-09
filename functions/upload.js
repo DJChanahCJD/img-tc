@@ -185,6 +185,9 @@ function createFormData(file, type, config) {
 // 上传到 Cloudinary
 async function uploadToCloudinary(formData, type, config, originalFile) {
     try {
+        formData.append('async', true);
+        formData.append('eager_async', true);
+        formData.append('eager', 'q_auto,vc_auto');
         const response = await fetch(
             `https://api.cloudinary.com/v1_1/${config.cloudName}/${type === 'image' ? 'image' : 'video'}/upload`,
             {
