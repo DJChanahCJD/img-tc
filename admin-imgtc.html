@@ -216,7 +216,7 @@
 <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script> <!-- Vue -->
 <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/index.js"></script> <!-- ElementUI -->
 <script>
-  import { processMediaWithCloudinary } from './functions/upload';
+  import { maxUploadSize } from './functions/upload';
   new Vue({
     el: '#app',
     data: {
@@ -367,7 +367,7 @@
         // 大于20MB虽然能够成功上传，但无法获取文件链接
         // 这里设置上传阈值为30MB，并使用Cloudinary进行压缩到小于20MB
         const config = {
-          maxSize: UPLOAD_CONFIG.maxUploadSize,
+          maxSize: maxUploadSize,
           validTypes: ['image/', 'video/', 'audio/'],
           maxConcurrent: 3
         };
