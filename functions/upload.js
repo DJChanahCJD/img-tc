@@ -29,6 +29,7 @@ export async function onRequestPost(context) {
             throw new Error(`File size exceeds maximum limit of ${maxUploadSize / (1024 * 1024)}MB`);
         }
 
+        let mediaType;
         if (uploadFile.type.startsWith('image/')) {
             mediaType = 'image';
         } else if (uploadFile.type.startsWith('video/')) {
