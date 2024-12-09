@@ -5,8 +5,8 @@ export const UPLOAD_CONFIG = {
 
     // Cloudinary 配置
     cloudinary: {
-        cloudName: process.env.CLOUDINARY_CLOUD_NAME || 'dqkwacsdc',
-        uploadPreset: process.env.CLOUDINARY_UPLOAD_PRESET || 'ml_default',
+        cloudName: env.CLOUDINARY_CLOUD_NAME,
+        uploadPreset: env.CLOUDINARY_UPLOAD_PRESET,
 
         // 媒体处理配置
         presets: {
