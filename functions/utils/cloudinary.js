@@ -2,7 +2,11 @@ export const maxUploadSize = 40 * 1024 * 1024
 export const compressionThreshold = 20 * 1024 * 1024 - 1
 
 // 处理媒体文件
-export async function processMediaWithCloudinary(file, type, config, env) {
+export async function processMediaWithCloudinary(file, type, env) {
+    const config = {
+        cloudName: env.CLOUDINARY_CLOUD_NAME,
+        uploadPreset: env.CLOUDINARY_UPLOAD_PRESET,
+    };
     // 创建表单数据
     const formData = createFormData(file, type, config);
 

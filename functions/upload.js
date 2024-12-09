@@ -3,12 +3,6 @@ import { maxUploadSize, compressionThreshold, processMediaWithCloudinary } from 
 export async function onRequestPost(context) {
     const { request, env } = context;
 
-    const CLOUDINARY_CONFIG = {
-        // Cloudinary 配置
-        cloudName: env.CLOUDINARY_CLOUD_NAME,
-        uploadPreset: env.CLOUDINARY_UPLOAD_PRESET,
-    };
-
     try {
         const clonedRequest = request.clone();
         const formData = await clonedRequest.formData();
@@ -43,7 +37,6 @@ export async function onRequestPost(context) {
                 uploadFile = await processMediaWithCloudinary(
                     uploadFile,
                     mediaType,
-                    CLOUDINARY_CONFIG,
                     env
                 );
 
