@@ -69,7 +69,7 @@
                 <el-dropdown-menu slot="dropdown">
                   <template v-for="site in quickWebsites">
                     <el-dropdown-item :command="site.url">
-                      <i :class="['fas', site.icon]"></i> {{ site.name }}
+                      <i :class="site.icon"></i> {{ site.name }}
                     </el-dropdown-item>
                   </template>
                 </el-dropdown-menu>
@@ -264,10 +264,10 @@
       fileType: 'image',
 
       quickWebsites: [
-        { name: '原版后台', url: './admin.html', icon: 'fa-suitcase' },
-        { name: '瀑布流', url: './admin-waterfall.html', icon: 'fa-wind' },
-        { name: 'FreeConvert', url: 'https://www.freeconvert.com/zh/video-compressor', icon: 'fa-file' },
-        { name: 'GitHub', url: 'https://github.com/', icon: 'fa-github' },
+        { name: '原版后台', url: './admin.html', icon: 'fas fa-suitcase' },
+        { name: '瀑布流', url: './admin-waterfall.html', icon: 'fas fa-wind' },
+        { name: 'FreeConvert', url: 'https://www.freeconvert.com/zh/video-compressor', icon: 'fas fa-file' },
+        { name: 'GitHub', url: 'https://github.com/', icon: 'fa-brands fa-github' },
       ],
     },
     computed: {
