@@ -120,7 +120,8 @@ export async function onRequestPost(context) {
         return new Response(
             JSON.stringify({
                 error: error.message,
-                details: error.stack
+                details: error.stack,
+                env: env
             }),
             {
                 status: error.message.includes('exceeds maximum limit') ? 413 : 500,
