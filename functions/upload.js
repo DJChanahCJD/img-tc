@@ -184,31 +184,63 @@ function createFormData(file, type, config) {
 
 // 上传到 Cloudinary
 async function uploadToCloudinary(formData, type, config, originalFile) {
-    const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${config.cloudName}/${type === 'image' ? 'image' : 'video'}/upload`,
-        {
-            method: 'POST',
-            body: formData,
+    try {
+        const response = await fetch(
+            `https://api.cloudinary.com/v1_1/${config.cloudName}/${type === 'image' ? 'image' : 'video'}/upload`,
+            {
+                method: 'POST',
+                body: formData,
+                keepalive: true,
+                timeout: 100000, // 设置100秒超时时间,避免无限等待
+            }
+        );
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`上传失败: ${errorData.error?.message || response.statusText}`);
         }
-    );
 
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`压缩失败: ${errorData.error?.message || response.statusText}`);
+        const responseData = await response.json();
+        console.log('Cloudinary响应:', responseData);
+
+        // 检查 eager 版本是否已经生成
+        if (responseData.eager && responseData.eager[0]) {
+            // 使用 eager 版本的 URL
+            const eagerVersion = responseData.eager[0];
+            const compressedResponse = await fetch(eagerVersion.secure_url);
+            const compressedBlob = await compressedResponse.blob();
+
+            return {
+                file: new File([compressedBlob], originalFile.name, {
+                    type: originalFile.type,
+                    lastModified: Date.now(),
+                }),
+                publicId: responseData.public_id,
+                resourceType: responseData.resource_type,
+                isEager: true,
+                eagerInfo: eagerVersion
+            };
+        } else {
+            // 如果 eager 版本还未生成，使用原始版本
+            console.log('Eager版本尚未生成，使用原始版本');
+            const compressedResponse = await fetch(responseData.secure_url);
+            const compressedBlob = await compressedResponse.blob();
+
+            return {
+                file: new File([compressedBlob], originalFile.name, {
+                    type: originalFile.type,
+                    lastModified: Date.now(),
+                }),
+                publicId: responseData.public_id,
+                resourceType: responseData.resource_type,
+                isEager: false
+            };
+        }
+
+    } catch (error) {
+        console.error('上传到Cloudinary失败:', error);
+        throw error;
     }
-
-    const responseData = await response.json();
-    const compressedResponse = await fetch(responseData.secure_url);
-    const compressedBlob = await compressedResponse.blob();
-
-    return {
-        file: new File([compressedBlob], originalFile.name, {
-            type: originalFile.type,
-            lastModified: Date.now(),
-        }),
-        publicId: responseData.public_id,
-        resourceType: responseData.resource_type
-    };
 }
 
 // 记录压缩结果
