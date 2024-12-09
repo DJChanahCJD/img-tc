@@ -1,8 +1,17 @@
 import { errorHandling, telemetryData } from "./utils/middleware";
-import { UPLOAD_CONFIG } from '../config/cloudinary';
+import { UPLOAD_CONFIG } from "../config/cloudinary";
+
+export const maxUploadSize = 30 * 1024 * 1024
+export const compressionThreshold = 20 * 1024 * 1024 - 1
 
 export async function onRequestPost(context) {
     const { request, env } = context;
+
+    const CLOUDINARY_CONFIG = {
+        // Cloudinary 配置
+        cloudName: env.CLOUDINARY_CLOUD_NAME,
+        uploadPreset: env.CLOUDINARY_UPLOAD_PRESET,
+    };
 
     try {
         const clonedRequest = request.clone();
@@ -17,16 +26,8 @@ export async function onRequestPost(context) {
         }
 
         // 检查文件大小是否超过总上传限制
-        if (uploadFile.size > UPLOAD_CONFIG.maxUploadSize) {
-            throw new Error(`File size exceeds maximum limit of ${UPLOAD_CONFIG.maxUploadSize / (1024 * 1024)}MB`);
-        }
-
-        // 确定文件类型和压缩级别
-        let mediaType;
-        let compressionLevel = 'medium';
-
-        if (uploadFile.size > UPLOAD_CONFIG.compressionThreshold) {
-            compressionLevel = 'low';
+        if (uploadFile.size > maxUploadSize) {
+            throw new Error(`File size exceeds maximum limit of ${maxUploadSize / (1024 * 1024)}MB`);
         }
 
         if (uploadFile.type.startsWith('image/')) {
@@ -40,12 +41,12 @@ export async function onRequestPost(context) {
         // 处理需要压缩的文件
         if (mediaType && uploadFile.size > UPLOAD_CONFIG.compressionThreshold) {
             try {
-                console.log(`Processing ${mediaType} with ${compressionLevel} compression...`);
+                console.log(`Processing ${mediaType} with compression...`);
 
                 uploadFile = await processMediaWithCloudinary(
                     uploadFile,
                     mediaType,
-                    compressionLevel
+                    CLOUDINARY_CONFIG
                 );
 
                 // 检查处理后的文件大小
@@ -147,38 +148,54 @@ function getFileId(response) {
 }
 
 // 处理媒体文件
-async function processMediaWithCloudinary(file, type, compressionLevel = 'medium') {
+async function processMediaWithCloudinary(file, type, config) {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', UPLOAD_CONFIG.cloudinary.uploadPreset);
+    formData.append('upload_preset', config.uploadPreset);
 
     // 添加时间戳和唯一标识符以防止缓存问题
     formData.append('timestamp', Date.now());
     formData.append('public_id', `${type}_${Date.now()}`);
 
-    // 直接将转换参数作为独立参数添加，而不是作为 transformation 对象
-    const preset = UPLOAD_CONFIG.cloudinary.presets[type][compressionLevel];
-    Object.entries(preset).forEach(([key, value]) => {
+    // 压缩配置
+    const compressionParams = {
+        image: {
+            quality: 'auto:eco',
+            fetch_format: 'auto',
+            max_width: 1920,
+            max_height: 1080,
+            crop: 'limit',
+            format: 'webp',
+            flags: 'lossy',
+        },
+        video: {
+            quality: 'auto:eco',
+            fetch_format: 'mp4',
+            max_width: 1920,
+            max_height: 1080,
+            crop: 'limit',
+            bit_rate: '400k',
+            audio_codec: 'aac',
+            audio_bitrate: '48k',
+            codec: 'h264',
+            fps: '24',
+        },
+        audio: {
+            quality: 'auto:eco',
+            bit_rate: '64k',
+            sample_rate: '44100',
+            format: 'mp3',
+        },
+    };
+
+    // 添加压缩参数
+    Object.entries(compressionParams[type]).forEach(([key, value]) => {
         formData.append(key, value);
     });
 
-    // 根据文件类型确定资源类型
-    let resourceType;
-    switch(type) {
-        case 'image':
-            resourceType = 'image';
-            break;
-        case 'audio':
-        case 'video':
-            resourceType = 'video';
-            break;
-        default:
-            resourceType = 'auto';
-    }
-
     try {
         const response = await fetch(
-            `https://api.cloudinary.com/v1_1/${UPLOAD_CONFIG.cloudinary.cloudName}/${resourceType}/upload`,
+            `https://api.cloudinary.com/v1_1/${config.cloudName}/${type === 'image' ? 'image' : 'video'}/upload`,
             {
                 method: 'POST',
                 body: formData,
@@ -187,13 +204,10 @@ async function processMediaWithCloudinary(file, type, compressionLevel = 'medium
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(`Cloudinary upload failed: ${errorData.error?.message || response.statusText}`);
+            throw new Error(`压缩失败: ${errorData.error?.message || response.statusText}`);
         }
 
         const data = await response.json();
-        console.log('Cloudinary response:', data);
-
-        // 下载处理后的文件
         const processedResponse = await fetch(data.secure_url);
         if (!processedResponse.ok) {
             throw new Error('Failed to download processed file');
@@ -201,15 +215,13 @@ async function processMediaWithCloudinary(file, type, compressionLevel = 'medium
 
         const processedBlob = await processedResponse.blob();
 
-        // 返回处理后的文件，保持与原有代码兼容
         return new File([processedBlob], file.name, {
             type: file.type,
             lastModified: Date.now(),
-            size: processedBlob.size,
         });
 
     } catch (error) {
-        console.error(`Cloudinary ${type} processing failed:`, error);
+        console.error(`文件压缩失败:`, error);
         throw error;
     }
 }
