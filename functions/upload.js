@@ -51,11 +51,6 @@ export async function onRequestPost(context) {
                 );
 
                 throw new Error('processed File' + JSON.stringify(uploadFile));
-                // 检查处理后的文件大小
-                if (uploadFile.size > compressionThreshold) {
-                    throw new Error('File still exceeds threshold after compression');
-                }
-
             } catch (processingError) {
                 console.error('Processing failed:', processingError);
             }
@@ -162,7 +157,7 @@ async function processMediaWithCloudinary(file, type, config, env) {
         await logCompressionResult(compressedFile, env);
 
         // 清理 Cloudinary 上的临时文件
-        await cleanupCloudinaryFile(config, compressedFile.publicId, compressedFile.resourceType);
+        // await cleanupCloudinaryFile(config, compressedFile.publicId, compressedFile.resourceType);
 
         return compressedFile.file;
 
@@ -179,48 +174,11 @@ function createFormData(file, type, config) {
     formData.append('upload_preset', config.uploadPreset);
     formData.append('timestamp', Date.now());
 
-    // 压缩参数配置
-    const transformations = {
-        image: [{
-            quality: 'auto:eco',
-            fetch_format: 'auto',
-            width: 1920,
-            height: 1080,
-            crop: 'limit',
-            format: 'webp',
-        }],
-        video: [{
-            quality: 'auto:eco',
-            format: 'mp4',
-            width: 1920,
-            height: 1080,
-            crop: 'limit',
-            bit_rate: '400k',
-            audio_codec: 'aac',
-            audio_bitrate: '48k',
-            video_codec: 'h264',
-            fps: '24',
-        }],
-        audio: [{
-            quality: 'auto:eco',
-            bit_rate: '64k',
-            sample_rate: '44100',
-            format: 'mp3',
-        }],
-    };
-
-    // 添加 transformation 参数
-    formData.append('transformation', JSON.stringify(transformations[type]));
-
-    // 对于视频和音频，添加资源类型
     if (type === 'video' || type === 'audio') {
         formData.append('resource_type', 'video');
     }
 
-    // 记录转换参数
     console.log('文件类型:', type);
-    console.log('转换参数:', JSON.stringify(transformations[type], null, 2));
-
     return formData;
 }
 
