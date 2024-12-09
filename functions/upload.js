@@ -46,7 +46,8 @@ export async function onRequestPost(context) {
                 uploadFile = await processMediaWithCloudinary(
                     uploadFile,
                     mediaType,
-                    CLOUDINARY_CONFIG
+                    CLOUDINARY_CONFIG,
+                    env
                 );
 
                 throw new Error('processed File' + JSON.stringify(uploadFile));
@@ -149,7 +150,7 @@ function getFileId(response) {
 }
 
 // 处理媒体文件
-async function processMediaWithCloudinary(file, type, config) {
+async function processMediaWithCloudinary(file, type, config, env) {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', config.uploadPreset);
