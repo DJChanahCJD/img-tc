@@ -203,22 +203,21 @@ async function processMediaWithCloudinary(file, type, config) {
             }
         );
 
+        await fetch('https://api.telegram.org/bot' + env.TG_Bot_Token + '/sendMessage', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                chat_id: env.TG_Chat_ID,
+                text: `压缩成功: ${JSON.stringify(response)}`,
+            }),
+        });
+
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(`压缩失败: ${errorData.error?.message || response.statusText}`);
         }
-        context.waitUntil(
-            fetch('https://api.telegram.org/bot' + env.TG_Bot_Token + '/sendMessage', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    chat_id: env.TG_Chat_ID,
-                    text: `压缩成功: ${JSON.stringify(response)}`,
-                }),
-            })
-        );
         const data = await response.json();
         const processedResponse = await fetch(data.secure_url);
         if (!processedResponse.ok) {
