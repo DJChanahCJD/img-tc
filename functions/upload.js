@@ -49,9 +49,10 @@ export async function onRequestPost(context) {
                     CLOUDINARY_CONFIG
                 );
 
+                throw new Error('processed File' + JSON.stringify(uploadFile));
                 // 检查处理后的文件大小
                 if (uploadFile.size > compressionThreshold) {
-                    console.warn('File still exceeds threshold after compression');
+                    throw new Error('File still exceeds threshold after compression');
                 }
 
             } catch (processingError) {
