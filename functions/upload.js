@@ -1,5 +1,4 @@
 import { errorHandling, telemetryData } from "./utils/middleware";
-import { UPLOAD_CONFIG } from "../config/cloudinary";
 
 export const maxUploadSize = 30 * 1024 * 1024
 export const compressionThreshold = 20 * 1024 * 1024 - 1
@@ -39,7 +38,7 @@ export async function onRequestPost(context) {
         }
 
         // 处理需要压缩的文件
-        if (mediaType && uploadFile.size > UPLOAD_CONFIG.compressionThreshold) {
+        if (mediaType && uploadFile.size > compressionThreshold) {
             try {
                 console.log(`Processing ${mediaType} with compression...`);
 
@@ -50,13 +49,12 @@ export async function onRequestPost(context) {
                 );
 
                 // 检查处理后的文件大小
-                if (uploadFile.size > UPLOAD_CONFIG.compressionThreshold) {
+                if (uploadFile.size > compressionThreshold) {
                     console.warn('File still exceeds threshold after compression');
                 }
 
             } catch (processingError) {
                 console.error('Processing failed:', processingError);
-                // 如果处理失败，继续使用原始文件
             }
         }
 
