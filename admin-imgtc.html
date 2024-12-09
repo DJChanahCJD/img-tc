@@ -250,7 +250,7 @@
         audio: '音频'
       },
       uploadConfig: {
-        maxSize: 30 * 1024 * 1024,  // 最大上传30MB
+        maxSize: 40 * 1024 * 1024,  // 最大上传40MB（通过Cloudinary压缩到20MB以下）
         validTypes: ['image/', 'video/', 'audio/'],
         maxConcurrent: 3
       },
@@ -403,7 +403,7 @@
         // 显示错误信息
         [
           [errors.type, '文件类型不支持'],
-          [errors.size, `文件超过20MB`]
+          [errors.size, `文件超过${config.maxSize / 1024 / 1024}MB`]
         ].forEach(([files, msg], index) => {
           setTimeout(() => files.length && this.$message.error({message: `${msg}: ${files.join(', ')}`}, 100), index * 1000);
         });
