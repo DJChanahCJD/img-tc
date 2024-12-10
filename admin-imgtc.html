@@ -332,6 +332,7 @@
           const searchLower = this.search?.toLowerCase() || '';
           const matchesSearch = !searchLower || [
             data.name?.toLowerCase(),
+            (data.metadata.originalName || '').toLowerCase(),
             (data.metadata.ListType || 'None').toLowerCase(),
             (data.metadata.Label || 'None').toLowerCase()
           ].some(field => field?.includes(searchLower));
