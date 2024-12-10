@@ -411,6 +411,10 @@ body {
   color: #FFD7E4;
 }
 
+.select-btn .selected {
+  transform: scale(1.05);
+}
+
 .control-btn {
   width: 40px;
   height: 40px;
