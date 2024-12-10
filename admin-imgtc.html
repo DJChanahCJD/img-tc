@@ -329,12 +329,12 @@
       filteredTableData() {
         return this.tableData.filter(data => {
           // 搜索匹配
-          const searchLower = this.search.toLowerCase();
+          const searchLower = this.search?.toLowerCase() || '';
           const matchesSearch = !searchLower || [
-            data.name.toLowerCase(),
-            data.metadata.ListType.toLowerCase(),
-            data.metadata.Label.toLowerCase()
-          ].some(field => field.includes(searchLower));
+            data.name?.toLowerCase(),
+            (data.metadata.ListType || 'None').toLowerCase(),
+            (data.metadata.Label || 'None').toLowerCase()
+          ].some(field => field?.includes(searchLower));
 
           // 筛选匹配
           const matchesFilter = {
@@ -366,7 +366,7 @@
         return this.fileType === 'image' ? 'fas fa-image' :
         this.fileType === 'video' ? 'fas fa-video' :
         this.fileType === 'audio' ? 'fas fa-music' :
-        this.fileType === 'document' ? 'fas fa-file' : '';
+        this.fileType === 'document' ? 'fas fa-folder-open' : '';
       }
     },
     watch: {  // 监听数据变化
