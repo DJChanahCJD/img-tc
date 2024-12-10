@@ -365,7 +365,8 @@
         return this.filterOption === 'all' ? 'fas fa-filter' :
         this.filterOption === 'favorites' ? 'fas fa-bookmark' :
         this.filterOption === 'blocked' ? 'fas fa-lock' :
-        this.filterOption === 'unblocked' ? 'fas fa-unlock' : '';
+        this.filterOption === 'unblocked' ? 'fas fa-unlock' :
+        this.filterOption === 'adult' ? 'fas fa-user-secret' : '';
       },
       fileTypeIcon() {
         return this.fileType === 'image' ? 'fas fa-image' :
