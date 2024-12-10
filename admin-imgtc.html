@@ -50,6 +50,7 @@
                   <el-dropdown-item command="favorites" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'favorites' }"><i class="fas fa-bookmark"></i> 收藏</el-dropdown-item>
                   <el-dropdown-item command="blocked" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'blocked' }"><i class="fas fa-lock"></i> 黑名单</el-dropdown-item>
                   <el-dropdown-item command="unblocked" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'unblocked' }"><i class="fas fa-unlock"></i> 白名单</el-dropdown-item>
+                  <el-dropdown-item command="adult" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'adult' }"><i class="fas fa-user-secret"></i> NSFW</el-dropdown-item>
                 </el-dropdown-menu>
               </el-dropdown>
             </el-tooltip>
@@ -334,7 +335,6 @@
           const matchesSearch = !searchLower || [
             (data.metadata.originalName || '').toLowerCase(),
             data.name?.toLowerCase(),
-            data.metadata.Label?.toLowerCase()
           ].some(field => field?.includes(searchLower));
 
           // 筛选匹配
@@ -342,7 +342,8 @@
             'all': true,
             'favorites': data.metadata.liked,
             'blocked': data.metadata.ListType === 'Block',
-            'unblocked': data.metadata.ListType === 'White'
+            'unblocked': data.metadata.ListType === 'White',
+            'adult': data.metadata.Label?.toLowerCase() === 'adult',
           }[this.filterOption] ?? true;
 
           // 文件类型匹配
@@ -776,8 +777,8 @@
         return icons[ext] || 'fas fa-file';
       },
       getFileType(filename) {
-        const ext = filename.split('.').pop().toLowerCase();
-        return `${ext.toUpperCase()} File`;
+        const ext = filename.split('.').pop();
+        return `${ext.toUpperCase()}`;
       }
     },
     mounted() {
