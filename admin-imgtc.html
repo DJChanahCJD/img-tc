@@ -118,7 +118,7 @@
                   </template>
                   <template #reference>
                     <span :style="{ color: item.metadata.ListType !== 'Block' ? '#fff' : '#aaa' }">
-                      {{ item.metadata.originalName || item.name }}
+                      {{ item.metadata.fileName || item.name }}
                     </span>
                   </template>
                 </el-popover>
@@ -140,7 +140,8 @@
                       </template>
                       <template #reference>
                         <span :style="{ color: item.metadata.ListType !== 'Block' ? '#fff' : '#aaa' }">
-                          {{ item.metadata.originalName || item.name }}
+                          <i class="fas fa-edit edit-icon" @click="handleEditName(item.name)"></i>
+                          {{ item.metadata.fileName || item.name }}
                         </span>
                       </template>
                     </el-popover>
@@ -183,7 +184,8 @@
                           </template>
                           <template #reference>
                             <span :style="{ color: item.metadata.ListType !== 'Block' ? '#fff' : '#aaa' }">
-                              {{ item.metadata.originalName || item.name }}
+                              <i class="fas fa-edit edit-icon" @click="handleEditName(item.name)"></i>
+                              {{ item.metadata.fileName || item.name }}
                             </span>
                           </template>
                         </el-popover>
@@ -236,7 +238,8 @@
                           </template>
                           <template #reference>
                             <span :style="{ color: item.metadata.ListType !== 'Block' ? '#fff' : '#aaa' }">
-                              {{ item.metadata.originalName || item.name }}
+                              <i class="fas fa-edit edit-icon" @click="handleEditName(item.name)"></i>
+                              {{ item.metadata.fileName || item.name }}
                             </span>
                           </template>
                         </el-popover>
@@ -333,7 +336,7 @@
           // 搜索匹配
           const searchLower = this.search.toLowerCase();
           const matchesSearch = !searchLower || [
-            (data.metadata.originalName || '').toLowerCase(),
+            (data.metadata.fileName || '').toLowerCase(),
             data.name?.toLowerCase(),
           ].some(field => field?.includes(searchLower));
 
@@ -402,7 +405,7 @@
         return `
           <div style="text-align: left; padding: 5px;">
             <div><strong>当前文件名：</strong>${item.name}</div>
-            <div><strong>原始文件名：</strong>${metadata.originalName || '未知'}</div>
+            <div><strong>原始文件名：</strong>${metadata.fileName || '未知'}</div>
             <div><strong>上传时间：</strong>${timestamp}</div>
             <div><strong>元数据：</strong>${JSON.stringify(metadata)}</div>
           </div>
@@ -794,6 +797,33 @@
       getFileType(filename) {
         const ext = filename.split('.').pop();
         return `${ext.toUpperCase()}`;
+      },
+      handleEditName(item) {
+        this.$prompt('请输入新的文件名', '修改文件名', {
+          inputValue: item.metadata.fileName || item.name,
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          inputValidator: (value) => {
+            if (!value) return '文件名不能为空';
+            if (value.length > 64) return '文件名不能超过64个字符';
+            return true;
+          }
+        }).then(({ value }) => {
+          fetch(`./api/manage/editName/${item.name}?newName=${encodeURIComponent(value)}`, {
+            method: 'GET',
+            credentials: 'include'
+          })
+          .then(response => response.json())
+          .then(result => {
+            if (result.success) {
+              item.metadata.fileName = value;
+              this.$message.success('文件名修改成功');
+            } else {
+              this.$message.error('文件名修改失败');
+            }
+          })
+          .catch(() => this.$message.error('修改文件名时出错，请检查网络连接'));
+        }).catch(() => {});
       }
     },
     mounted() {
