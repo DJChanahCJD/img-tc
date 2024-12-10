@@ -147,7 +147,7 @@
                     <!-- 控制按钮区域 -->
                   <div class="video-controls">
                     <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)"><i :class="item.metadata.liked ? 'fas fa-heart liked' : 'far fa-heart'"></i></button>
-                    <button class="control-btn edit-btn" @click.stop="handleEditName(item.name)"><i class="fas fa-edit"></i></button>
+                    <button class="control-btn edit-btn" @click.stop="handleEditName(item)"><i class="fas fa-edit"></i></button>
                     <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)"><i :class="item.selected ? 'fas fa-square-check selected' : 'far fa-square'"></i></button>
                     <button class="control-btn" @click.stop="handleCopy(index, item.name)"><i class="fas fa-link"></i></button>
                     <button class="control-btn" @click.stop="handleDelete(index, item.name)"><i class="fas fa-trash-alt"></i></button>
@@ -191,7 +191,7 @@
                   <!-- 控制按钮区域 -->
                   <div class="audio-controls">
                     <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)"><i :class="item.metadata.liked ? 'fas fa-heart liked' : 'far fa-heart'"></i></button>
-                    <button class="control-btn edit-btn" @click.stop="handleEditName(item.name)"><i class="fas fa-edit"></i></button>
+                    <button class="control-btn edit-btn" @click.stop="handleEditName(item)"><i class="fas fa-edit"></i></button>
                     <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)"><i :class="item.selected ? 'fas fa-square-check selected' : 'far fa-square'"></i></button>
                     <button class="control-btn" @click.stop="handleCopy(index, item.name)"><i class="fas fa-copy"></i></button>
                     <button class="control-btn" @click.stop="handleDelete(index, item.name)"><i class="fas fa-trash-alt"></i></button>
@@ -228,7 +228,7 @@
                   <!-- 控制按钮区域 -->
                   <div class="file-controls">
                     <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)"><i :class="item.metadata.liked ? 'fas fa-heart liked' : 'far fa-heart'"></i></button>
-                    <button class="control-btn edit-btn" @click.stop="handleEditName(item.name)"><i class="fas fa-edit"></i></button>
+                    <button class="control-btn edit-btn" @click.stop="handleEditName(item)"><i class="fas fa-edit"></i></button>
                     <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)"><i :class="item.selected ? 'fas fa-square-check selected' : 'far fa-square'"></i></button>
                     <button class="control-btn" @click.stop="handleCopy(index, item.name)"><i class="fas fa-copy"></i></button>
                     <button class="control-btn" @click.stop="handleDelete(index, item.name)"><i class="fas fa-trash-alt"></i></button>
@@ -779,7 +779,7 @@
       },
       handleEditName(item) {
         this.$prompt('请输入新的文件名', '修改文件名', {
-          inputValue: item.metadata.fileName || item.name,
+          inputValue: item.metadata?.fileName || item.name,
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           inputValidator: (value) => {
@@ -795,7 +795,7 @@
           .then(response => response.json())
           .then(result => {
             if (result.success) {
-              item.metadata.fileName = value;
+              item.metadata?.fileName = value;
               this.$message.success('文件名修改成功');
             } else {
               this.$message.error('文件名修改失败');
