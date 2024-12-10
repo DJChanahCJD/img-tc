@@ -39,27 +39,7 @@ export async function onRequest(context) {
     // Allow the admin page to directly view the image
     const isAdmin = request.headers.get('Referer')?.includes(`${url.origin}/admin`);
     if (isAdmin) {
-        let record = await env.img_url.getWithMetadata(params.id);
-
-        // 如果没有 size 信息，则添加
-        if (!record?.metadata?.fileSize) {
-            const fileSize = response.headers.get('content-length');
-            const metadata = {
-                ...(record?.metadata || {}),
-                fileSize: parseInt(fileSize),
-            };
-
-            // 更新 KV 存储
-            await env.img_url.put(params.id, "", { metadata });
-            record.metadata = metadata;
-        }
-
-        return new Response(JSON.stringify({
-            name: params.id,
-            metadata: record.metadata
-        }), {
-            headers: { 'Content-Type': 'application/json' }
-        });
+        return response;
     }
 
     // check if kv storage is available
