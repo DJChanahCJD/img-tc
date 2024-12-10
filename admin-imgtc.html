@@ -296,7 +296,7 @@
         image: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'ico'],
         video: ['mp4', 'webm', 'ogg', 'avi', 'mov', 'wmv', 'flv', 'mkv'],
         audio: ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma'],
-        document: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'rar', '7z']
+        document: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'rar', '7z', 'js', 'py', 'java', 'h', 'cpp', 'c']
       },
       fileTypeNames: {
         image: '图片',
@@ -317,7 +317,6 @@
       sortOption: 'dateDesc',
       filterOption: 'all',
       fileType: 'image',
-
       quickWebsites: [
         { name: '原版后台', url: './admin.html', icon: 'fas fa-suitcase' },
         { name: '瀑布流', url: './admin-waterfall.html', icon: 'fas fa-wind' },
@@ -366,7 +365,9 @@
       },
       fileTypeIcon() {
         return this.fileType === 'image' ? 'fas fa-image' :
-                this.fileType === 'video' ? 'fas fa-video' : 'fas fa-music';
+        this.fileType === 'video' ? 'fas fa-video' :
+        this.fileType === 'audio' ? 'fas fa-music' :
+        this.fileType === 'document' ? 'fas fa-file' : '';
       }
     },
     watch: {  // 监听数据变化
@@ -793,7 +794,9 @@
           xls: 'fas fa-file-excel', xlsx: 'fas fa-file-excel',
           ppt: 'fas fa-file-powerpoint', pptx: 'fas fa-file-powerpoint',
           txt: 'fas fa-file-lines',
-          zip: 'fas fa-file-zipper', rar: 'fas fa-file-zipper', '7z': 'fas fa-file-zipper'
+          zip: 'fas fa-file-zipper', rar: 'fas fa-file-zipper', '7z': 'fas fa-file-zipper',
+          js: 'fas fa-file-code', py: 'fas fa-file-code', java: 'fas fa-file-code',
+          h: 'fas fa-file-code', cpp: 'fas fa-file-code', c: 'fas fa-file-code',
         };
         return icons[ext] || 'fas fa-file';
       },
@@ -805,9 +808,11 @@
           xls: 'Excel 表格', xlsx: 'Excel 表格',
           ppt: 'PowerPoint 演示', pptx: 'PowerPoint 演示',
           txt: '文本文档',
-          zip: '压缩文件', rar: '压缩文件', '7z': '压缩文件'
+          zip: '压缩文件', rar: '压缩文件', '7z': '压缩文件',
+          js: 'JavaScript 文件', py: 'Python 文件', java: 'Java 文件',
+          h: 'C 语言文件', cpp: 'C++ 文件', c: 'C 语言文件'
         };
-        return typeMap[ext] || `${ext.toUpperCase()} 文件`;
+        return types[ext] || `${ext.toUpperCase()} 文件`;
       }
     },
     mounted() {
