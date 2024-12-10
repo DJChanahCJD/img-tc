@@ -291,7 +291,7 @@ body {
 }
 
 /* 音视频卡片基础样式 */
-.video-card, .audio-card {
+.video-card, .audio-card, .file-card {
   background: linear-gradient(135deg, #8a4bffd9 0%, #6d82ffd9 100%);
   border: none;
   border-radius: 16px !important;
@@ -312,15 +312,15 @@ body {
   padding: 0 !important;
 }
 
-.audio-card.selected, .video-card.selected {
+.audio-card.selected, .video-card.selected, .file-card.selected {
   background: linear-gradient(135deg, rgba(138, 75, 255, 0.85) 0%, rgba(255, 215, 228, 0.85) 100%);
 }
 
-.video-card:hover, .audio-card:hover {
+.video-card:hover, .audio-card:hover, .file-card:hover {
   transform: scale(1.02);
 }
 
-.video-content, .audio-content {
+.video-content, .audio-content, .file-content {
   padding: 12px;
   color: white;
   width: 100%;
@@ -336,13 +336,13 @@ body {
   align-items: center;
 }
 
-.audio-header {
+.audio-header, .file-header {
   display: flex;
   align-items: center;
   margin-bottom: 15px;
 }
 
-.audio-avatar {
+.audio-avatar, .file-avatar {
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -357,12 +357,12 @@ body {
   object-fit: contain;
 }
 
-.audio-info {
+.audio-info, .file-info {
   flex: 1;
   min-width: 0;
 }
 
-.video-title, .audio-title {
+.video-title, .audio-title, .file-title {
   font-size: 16px;
   font-weight: 500;
   max-width: 100%;
@@ -376,7 +376,7 @@ body {
   font-size: 0.9em;
 }
 
-.audio-subtitle {
+.audio-subtitle, .file-subtitle {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.7);
 }
@@ -390,7 +390,7 @@ body {
   background: rgba(255, 255, 255, 0.2);
 }
 
-.video-controls, .audio-controls {
+.video-controls, .audio-controls, .file-controls {
   display: flex;
   justify-content: center;
   gap: 20px;

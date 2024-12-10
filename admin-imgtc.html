@@ -217,15 +217,15 @@
             </template>
             <!-- 文件 -->
             <template v-else>
-              <el-card class="audio-card" :class="{ 'selected': item.selected }">
-                <div class="audio-content">
+              <el-card class="file-card" :class="{ 'selected': item.selected }">
+                <div class="file-content">
                   <!-- 文件标题区域 -->
-                  <div class="audio-header">
-                    <div class="audio-avatar">
+                  <div class="file-header">
+                    <div class="file-avatar" style="display: flex; justify-content: center; align-items: center;">
                       <i :class="getFileIcon(item.name)" style="font-size: 24px;"></i>
                     </div>
-                    <div class="audio-info">
-                      <div class="audio-title">
+                    <div class="file-info">
+                      <div class="file-title">
                         <el-popover
                           trigger="click"
                           placement="top"
@@ -240,11 +240,11 @@
                           </template>
                         </el-popover>
                       </div>
-                      <div class="audio-subtitle">{{ getFileType(item.name) }}</div>
+                      <div class="file-subtitle">{{ getFileType(item.name) }}</div>
                     </div>
                   </div>
                   <!-- 控制按钮区域 -->
-                  <div class="audio-controls">
+                  <div class="file-controls">
                     <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)">
                       <i :class="item.metadata.liked ? 'fas fa-heart liked' : 'far fa-heart'"></i>
                     </button>
@@ -306,7 +306,6 @@
       },
       uploadConfig: {
         maxSize: 40 * 1024 * 1024,  // 最大上传40MB（通过Cloudinary压缩到20MB以下）
-        validTypes: ['image/', 'video/', 'audio/'],
         maxConcurrent: 3
       },
       tableData: [],
@@ -450,23 +449,16 @@
         // 大于20MB虽然能够成功上传，但无法获取文件链接
         // 这里设置上传阈值为30MB，并使用Cloudinary进行压缩到小于20MB
         const config = this.uploadConfig;
-        // 文件分类
-        const { valid, errors } = files.reduce((acc, file) => {
-          const isValidType = config.validTypes.some(type => file.type.startsWith(type));
-          const isValidSize = file.size <= config.maxSize;
-          if (!isValidType) acc.errors.type.push(file.name);
-          else if (!isValidSize) acc.errors.size.push(file.name);
-          else acc.valid.push(file);
-          return acc;
-        }, { valid: [], errors: { type: [], size: [] } });
+        // 过滤有效文件
+        const valid = files.filter(file => file.size <= config.maxSize);
+        const invalid = files.filter(file => file.size > config.maxSize);
+
         // 显示错误信息
-        [
-          [errors.type, '文件类型不支持'],
-          [errors.size, `文件超过${config.maxSize / 1024 / 1024}MB`]
-        ].forEach(([files, msg], index) => {
-          setTimeout(() => files.length && this.$message.error({message: `${msg}: ${files.join(', ')}`}, 100), index * 1000);
-        });
-        if (!valid.length) {
+        if(invalid.length) {
+          this.$message.error(`文件超过${config.maxSize/1024/1024}MB: \n${invalid.map(f => f.name).join('\n')}`);
+        }
+
+        if(!valid.length) {
           this.$message.info('没有符合条件的文件');
           event.target.value = '';
           return;
