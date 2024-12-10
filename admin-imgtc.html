@@ -476,7 +476,7 @@
                 this.tableData.unshift({
                   name: src.replace(/^\/file\//, ''),
                   selected: false,
-                  metadata: { TimeStamp: Date.now() }
+                  metadata: { TimeStamp: Date.now(), fileSize: file.size }
                 });
                 successCount++;
               }

@@ -33,19 +33,33 @@ export async function onRequest(context) {
     // If the response is OK, proceed with further checks
     if (!response.ok) return response;
 
-
     // Log response details
     console.log(response.ok, response.status);
 
     // Allow the admin page to directly view the image
     const isAdmin = request.headers.get('Referer')?.includes(`${url.origin}/admin`);
     if (isAdmin) {
-        const fileSize = response.headers.get('content-length');
-        console.log(`File size: ${formatFileSize(parseInt(fileSize))}`);
+        let record = await env.img_url.getWithMetadata(params.id);
 
-        const responseWithSize = new Response(response.body, response);
-        responseWithSize.headers.set('X-File-Size', fileSize);
-        return responseWithSize;
+        // 如果没有 size 信息，则添加
+        if (!record?.metadata?.fileSize) {
+            const fileSize = response.headers.get('content-length');
+            const metadata = {
+                ...(record?.metadata || {}),
+                fileSize: parseInt(fileSize),
+            };
+
+            // 更新 KV 存储
+            await env.img_url.put(params.id, "", { metadata });
+            record.metadata = metadata;
+        }
+
+        return new Response(JSON.stringify({
+            name: params.id,
+            metadata: record.metadata
+        }), {
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
 
     // check if kv storage is available
@@ -64,7 +78,8 @@ export async function onRequest(context) {
                 Label: "None",
                 TimeStamp: Date.now(),
                 liked: false,
-                fileName: params.id
+                fileName: params.id,
+                fileSize: 0,
             }
         };
         await env.img_url.put(params.id, "", { metadata: record.metadata });
@@ -76,6 +91,7 @@ export async function onRequest(context) {
         TimeStamp: record.metadata.TimeStamp || Date.now(),
         liked: record.metadata.liked !== undefined ? record.metadata.liked : false,
         fileName: record.metadata.fileName || params.id,
+        fileSize: record.metadata.fileSize || 0,
     };
 
     // Handle based on ListType and Label
@@ -135,13 +151,4 @@ async function getFilePath(env, file_id) {
         console.error('Error fetching file path:', error.message);
         return null;
     }
-}
-
-// 辅助函数：格式化文件大小
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
 }

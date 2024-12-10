@@ -100,7 +100,8 @@ export async function onRequestPost(context) {
                     ListType: "None",
                     Label: "None",
                     liked: false,
-                    fileName: fileName  // 添加原始文件名
+                    fileName: fileName,  // 添加原始文件名
+                    fileSize: uploadFile.size
                 }
             });
         }
