@@ -245,18 +245,10 @@
                   </div>
                   <!-- 控制按钮区域 -->
                   <div class="file-controls">
-                    <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)">
-                      <i :class="item.metadata.liked ? 'fas fa-heart liked' : 'far fa-heart'"></i>
-                    </button>
-                    <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)">
-                      <i :class="item.selected ? 'fas fa-square-check selected' : 'far fa-square'"></i>
-                    </button>
-                    <button class="control-btn" @click.stop="handleCopy(index, item.name)">
-                      <i class="fas fa-copy"></i>
-                    </button>
-                    <button class="control-btn" @click.stop="handleDelete(index, item.name)">
-                      <i class="fas fa-trash-alt"></i>
-                    </button>
+                    <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)"><i :class="item.metadata.liked ? 'fas fa-heart liked' : 'far fa-heart'"></i></button>
+                    <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)"><i :class="item.selected ? 'fas fa-square-check selected' : 'far fa-square'"></i></button>
+                    <button class="control-btn" @click.stop="handleCopy(index, item.name)"><i class="fas fa-copy"></i></button>
+                    <button class="control-btn" @click.stop="handleDelete(index, item.name)"><i class="fas fa-trash-alt"></i></button>
                   </div>
                 </div>
               </el-card>
@@ -290,13 +282,14 @@
       fileCount: {
         image: 0,
         video: 0,
-        audio: 0
+        audio: 0,
+        document: 0
       },
       fileTypes: {
         image: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'ico'],
         video: ['mp4', 'webm', 'ogg', 'avi', 'mov', 'wmv', 'flv', 'mkv'],
         audio: ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma'],
-        document: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'rar', '7z', 'js', 'py', 'java', 'h', 'cpp', 'c']
+        document: [],
       },
       fileTypeNames: {
         image: '图片',
@@ -305,7 +298,7 @@
         document: '文件'
       },
       uploadConfig: {
-        maxSize: 40 * 1024 * 1024,  // 最大上传40MB（通过Cloudinary压缩到20MB以下）
+        maxSize: 20 * 1024 * 1024,  // 最大上传20MB
         maxConcurrent: 3
       },
       tableData: [],
@@ -329,7 +322,7 @@
       filteredTableData() {
         return this.tableData.filter(data => {
           // 搜索匹配
-          const searchLower = this.search?.toLowerCase() || '';
+          const searchLower = this.search.toLowerCase();
           const matchesSearch = !searchLower || [
             data.name?.toLowerCase(),
             (data.metadata.originalName || '').toLowerCase(),
@@ -347,7 +340,9 @@
 
           // 文件类型匹配
           const ext = data.name.split('.').pop().toLowerCase();
-          const matchesType = this.fileTypes[this.fileType].includes(ext);
+          const matchesType = this.fileType === 'document' ?
+          !['image', 'video', 'audio'].some(type => this.fileTypes[type].includes(ext)) : // 匹配其他所有文件
+          this.fileTypes[this.fileType].includes(ext);
 
           return matchesSearch && matchesFilter && matchesType;
         });
@@ -430,15 +425,18 @@
       },
       updateStats() {
         this.Number = this.tableData.length;
-        this.fileCount = {image: 0, video: 0, audio: 0};
+        this.fileCount = {image: 0, video: 0, audio: 0, document: 0};
         this.tableData.forEach(file => {
           const ext = file.name.split('.').pop().toLowerCase();
+          let matched = false;
           for(const type in this.fileTypes) {
             if(this.fileTypes[type].includes(ext)) {
               this.fileCount[type]++;
+              matched = true;
               break;
             }
           }
+          if(!matched) { this.fileCount.document++; } // 匹配其他所有文件
         });
       },
       // 文件操作
@@ -448,22 +446,15 @@
         // 文件验证配置
         // telegram-bot可分发的最大文件大小（20MB）
         // 大于20MB虽然能够成功上传，但无法获取文件链接
-        // 这里设置上传阈值为30MB，并使用Cloudinary进行压缩到小于20MB
         const config = this.uploadConfig;
         // 过滤有效文件
-        const valid = files.filter(file => file.size <= config.maxSize);
-        const invalid = files.filter(file => file.size > config.maxSize);
-
+        const valid = [], invalid = [];
+        files.forEach(file => {
+          (file.size <= config.maxSize ? valid : invalid).push(file);
+        });
         // 显示错误信息
-        if(invalid.length) {
-          this.$message.error(`文件超过${config.maxSize/1024/1024}MB: \n${invalid.map(f => f.name).join('\n')}`);
-        }
-
-        if(!valid.length) {
-          this.$message.info('没有符合条件的文件');
-          event.target.value = '';
-          return;
-        }
+        if(invalid.length) { this.$message.error(`文件超过${config.maxSize/1024/1024}MB: \n${invalid.map(f => f.name).join('\n')}`); }
+        if(!valid.length) { this.$message.info('没有符合条件的文件'); event.target.value = ''; return; }
 
         try {
           await this.$confirm(`确定要上传这 ${valid.length} 个文件吗?`, '提示', {
@@ -661,15 +652,9 @@
       // 工具相关
       handleToolkit(command) {
         switch (command) {
-          case 'selectAllInPage':
-            this.selectAllInPage();
-            break;
-          case 'checkBrokenFiles':
-            this.checkBrokenFiles();
-            break;
-          case 'editWebsites':
-            this.editWebsites();
-            break;
+          case 'selectAllInPage': this.selectAllInPage(); break;
+          case 'checkBrokenFiles': this.checkBrokenFiles(); break;
+          case 'editWebsites': this.editWebsites(); break;
         }
       },
       switchFileType(type) {  // 切换文件类型
@@ -748,11 +733,6 @@
               图标需在 <a href="https://fontawesome.com/v6/search?m=free" target="_blank" style="color: #409EFF; text-decoration: underline">Font Awesome</a> 中选择
             </div>
           `,
-          inputStyle: {
-            minHeight: '200px',
-            width: '100%',
-            fontFamily: 'monospace'
-          },
           inputValidator: (value) => {
             const lines = value.split('\n');
             if (lines.length > 10) return '不能超过10行';
@@ -782,30 +762,16 @@
       getFileIcon(filename) {
         const ext = filename.split('.').pop().toLowerCase();
         const icons = {
-          pdf: 'fas fa-file-pdf',
-          doc: 'fas fa-file-word', docx: 'fas fa-file-word',
-          xls: 'fas fa-file-excel', xlsx: 'fas fa-file-excel',
-          ppt: 'fas fa-file-powerpoint', pptx: 'fas fa-file-powerpoint',
-          txt: 'fas fa-file-lines',
-          zip: 'fas fa-file-zipper', rar: 'fas fa-file-zipper', '7z': 'fas fa-file-zipper',
-          js: 'fas fa-file-code', py: 'fas fa-file-code', java: 'fas fa-file-code',
-          h: 'fas fa-file-code', cpp: 'fas fa-file-code', c: 'fas fa-file-code',
+          pdf: 'fas fa-file-pdf', doc: 'fas fa-file-word', docx: 'fas fa-file-word',
+          xls: 'fas fa-file-excel', xlsx: 'fas fa-file-excel', ppt: 'fas fa-file-powerpoint', pptx: 'fas fa-file-powerpoint',
+          txt: 'fas fa-file-lines', zip: 'fas fa-file-zipper', rar: 'fas fa-file-zipper', '7z': 'fas fa-file-zipper',
+          js: 'fas fa-file-code', py: 'fas fa-file-code', java: 'fas fa-file-code', h: 'fas fa-file-code', cpp: 'fas fa-file-code', c: 'fas fa-file-code',
         };
         return icons[ext] || 'fas fa-file';
       },
       getFileType(filename) {
         const ext = filename.split('.').pop().toLowerCase();
-        const types = {
-          pdf: 'PDF 文档',
-          doc: 'Word 文档', docx: 'Word 文档',
-          xls: 'Excel 表格', xlsx: 'Excel 表格',
-          ppt: 'PowerPoint 演示', pptx: 'PowerPoint 演示',
-          txt: '文本文档',
-          zip: '压缩文件', rar: '压缩文件', '7z': '压缩文件',
-          js: 'JavaScript 文件', py: 'Python 文件', java: 'Java 文件',
-          h: 'C 语言文件', cpp: 'C++ 文件', c: 'C 语言文件'
-        };
-        return types[ext] || `${ext.toUpperCase()} 文件`;
+        return `${ext.toUpperCase()} 文件`;
       }
     },
     mounted() {
