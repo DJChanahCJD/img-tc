@@ -21,7 +21,7 @@ export async function onRequest(context) {
         console.log(url.pathname.split(".")[0].split("/")[2])
         const filePath = await getFilePath(env, url.pathname.split(".")[0].split("/")[2]);
         console.log(filePath)
-        fileUrl = `https://api.telegram.org/file/bot${env.TG_Bot_Token}/${filePath}`;  
+        fileUrl = `https://api.telegram.org/file/bot${env.TG_Bot_Token}/${filePath}`;
 
     }
 
@@ -52,7 +52,8 @@ export async function onRequest(context) {
                     ListType: record.metadata.ListType || "None",
                     Label: record.metadata.Label || "None",
                     TimeStamp: record.metadata.TimeStamp || Date.now(),
-                    liked: record.metadata.liked !== undefined ? record.metadata.liked : false
+                    liked: record.metadata.liked !== undefined ? record.metadata.liked : false,
+                    originalName: record.metadata.originalName || params.id,    // 添加原始文件名
                 };
 
                 // Handle based on ListType and Label

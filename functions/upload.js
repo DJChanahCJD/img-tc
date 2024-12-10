@@ -89,13 +89,24 @@ export async function onRequestPost(context) {
             throw new Error('Failed to get file ID');
         }
 
+        const fileExtension = uploadFile.name.split('.').pop();
+        const fileName = uploadFile.name;
+
+        // 将文件信息保存到 KV 存储
+        if (env.img_url) {
+            await env.img_url.put(`${fileId}.${fileExtension}`, "", {
+                metadata: {
+                    TimeStamp: Date.now(),
+                    ListType: "None",
+                    Label: "None",
+                    liked: false,
+                    originalName: fileName  // 添加原始文件名
+                }
+            });
+        }
+
         return new Response(
-            JSON.stringify([{
-                'src': `/file/${fileId}.${uploadFile.name.split('.').pop()}`,
-                'compressed': uploadFile.size !== formData.get('file').size,
-                'originalSize': formData.get('file').size,
-                'compressedSize': uploadFile.size
-            }]),
+            JSON.stringify([{ 'src': `/file/${fileId}.${fileExtension}` }]),
             {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' }
@@ -123,6 +134,8 @@ function getFileId(response) {
 
     const result = response.result;
     if (result.photo) {
+        // Telegram 会为图片生成多个不同尺寸的版本
+        // 使用 reduce 找到最大尺寸的版本
         return result.photo.reduce((prev, current) =>
             (prev.file_size > current.file_size) ? prev : current
         ).file_id;

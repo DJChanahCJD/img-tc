@@ -115,7 +115,9 @@
                     <p v-html="formattedFileDetails(item)"></p>
                   </template>
                   <template #reference>
-                    <span :style="{ color: item.metadata.ListType !== 'Block' ? '#fff' : '#aaa' }">{{ item.name }}</span>
+                    <span :style="{ color: item.metadata.ListType !== 'Block' ? '#fff' : '#aaa' }">
+                      {{ item.metadata.originalName || item.name }}
+                    </span>
                   </template>
                 </el-popover>
               </div>
@@ -135,7 +137,9 @@
                         <p v-html="formattedFileDetails(item)"></p>
                       </template>
                       <template #reference>
-                        <span :style="{ color: item.metadata.ListType !== 'Block' ? '#fff' : '#aaa' }">{{ item.name }}</span>
+                        <span :style="{ color: item.metadata.ListType !== 'Block' ? '#fff' : '#aaa' }">
+                          {{ item.metadata.originalName || item.name }}
+                        </span>
                       </template>
                     </el-popover>
                   </div>
@@ -176,7 +180,9 @@
                             <p v-html="formattedFileDetails(item)"></p>
                           </template>
                           <template #reference>
-                            <span :style="{ color: item.metadata.ListType !== 'Block' ? '#fff' : '#aaa' }">{{ item.name }}</span>
+                            <span :style="{ color: item.metadata.ListType !== 'Block' ? '#fff' : '#aaa' }">
+                              {{ item.metadata.originalName || item.name }}
+                            </span>
                           </template>
                         </el-popover>
                       </div>
@@ -340,7 +346,8 @@
         const timestamp = new Date(metadata.TimeStamp).toLocaleString();
         return `
           <div style="text-align: left; padding: 5px;">
-            <div><strong>文件名：</strong>${item.name}</div>
+            <div><strong>当前文件名：</strong>${item.name}</div>
+            <div><strong>原始文件名：</strong>${metadata.originalName || '未知'}</div>
             <div><strong>上传时间：</strong>${timestamp}</div>
             <div><strong>元数据：</strong>${JSON.stringify(metadata)}</div>
           </div>
