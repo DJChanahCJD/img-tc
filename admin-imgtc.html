@@ -380,11 +380,11 @@
       },
       formattedFileDetails(item) {
         const metadata = item.metadata;
-        const timestamp = new Date(metadata.TimeStamp).toLocaleString();
+        const timestamp = new Date(metadata.TimeStamp).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
         return `
           <div style="text-align: left; padding: 5px;">
-            <div><strong>当前文件名：</strong>${item.name}</div>
-            <div><strong>原始文件名：</strong>${metadata.fileName || '未知'}</div>
+            <div><strong>ID：</strong>${item.name}</div>
+            <div><strong>文件名：</strong>${metadata.fileName || item.name}</div>
             <div><strong>上传时间：</strong>${timestamp}</div>
             <div><strong>元数据：</strong>${JSON.stringify(metadata)}</div>
           </div>
