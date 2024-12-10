@@ -795,7 +795,7 @@
           .then(response => response.json())
           .then(result => {
             if (result.success) {
-              item.metadata?.fileName = value;
+              item.metadata.fileName = value;
               this.$message.success('文件名修改成功');
             } else {
               this.$message.error('文件名修改失败');
