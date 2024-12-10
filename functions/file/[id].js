@@ -37,7 +37,8 @@ export async function onRequest(context) {
     // If the response is OK, proceed with further checks
     if (response.ok) {
         // Allow the admin page to directly view the image
-        if (request.headers.get('Referer') === `${url.origin}/admin`) {
+        const isAdmin = request.headers.get('Referer')?.includes(`${url.origin}/admin`);
+        if (isAdmin) {
             return response;
         }
 

@@ -442,6 +442,6 @@ body {
   }
 }
 
-.el-textarea__inner{
+.website-edit-dialog .el-textarea__inner{
   height: 240px !important;
 }
