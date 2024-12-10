@@ -318,7 +318,7 @@
       sortOption: 'dateDesc',
       filterOption: 'all',
       fileType: 'image',
-      quickWebsites: [
+      defaultQuickWebsites: [
         { name: '原版后台', url: './admin.html', icon: 'fas fa-suitcase' },
         { name: '瀑布流', url: './admin-waterfall.html', icon: 'fas fa-wind' },
         { name: 'Movavi', url: 'https://www.movavi.com/zh/movavi-video-converter.html', icon: 'fas fa-file-video' },
@@ -326,6 +326,7 @@
         { name: 'YouCompress', url: 'https://www.youcompress.com/zh-cn/', icon: 'fas fa-file-zipper' },
         { name: 'Cloudinary', url: 'https://console.cloudinary.com/', icon: 'fas fa-cloud' },
       ],
+      quickWebsites: [],
     },
     computed: {
       filteredTableData() {
@@ -732,6 +733,8 @@
           inputValue: websiteText,
           confirmButtonText: '确定',
           cancelButtonText: '取消',
+          showResetButton: true,
+          onReset: () => { this.quickWebsites = this.defaultQuickWebsites; },
           dangerouslyUseHTMLString: true,
           customClass: 'website-edit-dialog',
           message: `
@@ -825,27 +828,10 @@
         })
         .catch(() => this.$message.error('同步数据时出错，请检查网络连接'));
 
-      // 加载保存的快捷网站列表
-      const savedWebsites = localStorage.getItem('quickWebsites');
-      if (savedWebsites) {
-        this.quickWebsites = JSON.parse(savedWebsites);
-      }
+      this.quickWebsites = JSON.parse(localStorage.getItem('quickWebsites')) || this.defaultQuickWebsites;
     },
     beforeDestroy() {
       window.removeEventListener('resize', this.calculatePageSize);
-      // 清理音频资源
-      Object.keys(this.$refs).forEach(key => {
-        if (key.startsWith('audio-')) {
-          const audio = this.$refs[key][0];
-          if (audio) {
-            audio.pause();
-            audio.src = '';
-          }
-        }
-      });
-      // 确保清理全局事件监听
-      document.removeEventListener('mousemove', this.onDragging);
-      document.removeEventListener('mouseup', this.stopDragging);
     }
   });
 </script>
