@@ -768,13 +768,27 @@
       },
       getFileIcon(filename) {
         const ext = filename.split('.').pop().toLowerCase();
-        const icons = {
-          pdf: 'fas fa-file-pdf', doc: 'fas fa-file-word', docx: 'fas fa-file-word',
-          xls: 'fas fa-file-excel', xlsx: 'fas fa-file-excel', ppt: 'fas fa-file-powerpoint', pptx: 'fas fa-file-powerpoint',
-          txt: 'fas fa-file-lines', zip: 'fas fa-file-zipper', rar: 'fas fa-file-zipper', '7z': 'fas fa-file-zipper',
-          js: 'fas fa-file-code', py: 'fas fa-file-code', java: 'fas fa-file-code', h: 'fas fa-file-code', cpp: 'fas fa-file-code', c: 'fas fa-file-code',
+        const iconMap = {
+          'pdf': 'fas fa-file-pdf',
+          'doc,docx': 'fas fa-file-word',
+          'xls,xlsx,csv': 'fas fa-file-excel',
+          'ppt,pptx': 'fas fa-file-powerpoint',
+          'txt,md,log': 'fas fa-file-lines',
+          'zip,rar,7z,tar,gz': 'fas fa-file-zipper',
+          'html,htm,css,js,ts,jsx,tsx,vue,php,py,java,c,cpp,h,hpp,cs,go,rs,rb,pl,sh,sql': 'fas fa-file-code',
+          'json,xml,yaml,yml,toml': 'fas fa-file-code',
+          'mp4,avi,mov,wmv,flv,mkv,webm': 'fas fa-file-video',
+          'mp3,wav,ogg,flac,aac,m4a,wma': 'fas fa-file-audio',
+          'jpg,jpeg,png,gif,bmp,webp,svg,ico': 'fas fa-file-image',
+          'psd,ai,eps,cdr': 'fas fa-file-image',
+          'exe,msi,app,dmg,deb,rpm': 'fas fa-file-arrow-down'
         };
-        return icons[ext] || 'fas fa-file';
+        for(const [exts, icon] of Object.entries(iconMap)) {
+          if(exts.split(',').includes(ext)) {
+            return icon;
+          }
+        }
+        return 'fas fa-file';
       },
       getFileType(filename) {
         const ext = filename.split('.').pop();
