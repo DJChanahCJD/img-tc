@@ -29,6 +29,7 @@
                   <el-dropdown-item command="image" :class="{ 'el-dropdown-menu__item--selected': fileType === 'image' }"><i class="fas fa-image"></i> 图片</el-dropdown-item>
                   <el-dropdown-item command="video" :class="{ 'el-dropdown-menu__item--selected': fileType === 'video' }"><i class="fas fa-video"></i> 视频</el-dropdown-item>
                   <el-dropdown-item command="audio" :class="{ 'el-dropdown-menu__item--selected': fileType === 'audio' }"><i class="fas fa-music"></i> 音频</el-dropdown-item>
+                  <el-dropdown-item command="document" :class="{ 'el-dropdown-menu__item--selected': fileType === 'document' }"><i class="fas fa-file"></i> 文件</el-dropdown-item>
                 </el-dropdown-menu>
               </el-dropdown>
             </el-tooltip>
@@ -162,7 +163,7 @@
               </el-card>
             </template>
             <!-- 音频 -->
-            <template v-else>
+            <template v-else-if="fileType === 'audio'">
               <el-card class="audio-card" :class="{ 'selected': item.selected }">
                 <div class="audio-content">
                   <!-- 音频标题区域 -->
@@ -196,6 +197,52 @@
                     preload="metadata">
                     当前浏览器不支持音频播放
                   </audio>
+                  <!-- 控制按钮区域 -->
+                  <div class="audio-controls">
+                    <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)">
+                      <i :class="item.metadata.liked ? 'fas fa-heart liked' : 'far fa-heart'"></i>
+                    </button>
+                    <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)">
+                      <i :class="item.selected ? 'fas fa-square-check selected' : 'far fa-square'"></i>
+                    </button>
+                    <button class="control-btn" @click.stop="handleCopy(index, item.name)">
+                      <i class="fas fa-copy"></i>
+                    </button>
+                    <button class="control-btn" @click.stop="handleDelete(index, item.name)">
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                  </div>
+                </div>
+              </el-card>
+            </template>
+            <!-- 文件 -->
+            <template v-else>
+              <el-card class="audio-card" :class="{ 'selected': item.selected }">
+                <div class="audio-content">
+                  <!-- 文件标题区域 -->
+                  <div class="audio-header">
+                    <div class="audio-avatar">
+                      <i :class="getFileIcon(item.name)" style="font-size: 24px;"></i>
+                    </div>
+                    <div class="audio-info">
+                      <div class="audio-title">
+                        <el-popover
+                          trigger="click"
+                          placement="top"
+                          popper-class="custom-popover">
+                          <template #default>
+                            <p v-html="formattedFileDetails(item)"></p>
+                          </template>
+                          <template #reference>
+                            <span :style="{ color: item.metadata.ListType !== 'Block' ? '#fff' : '#aaa' }">
+                              {{ item.metadata.originalName || item.name }}
+                            </span>
+                          </template>
+                        </el-popover>
+                      </div>
+                      <div class="audio-subtitle">{{ getFileType(item.name) }}</div>
+                    </div>
+                  </div>
                   <!-- 控制按钮区域 -->
                   <div class="audio-controls">
                     <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)">
@@ -248,12 +295,14 @@
       fileTypes: {
         image: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'ico'],
         video: ['mp4', 'webm', 'ogg', 'avi', 'mov', 'wmv', 'flv', 'mkv'],
-        audio: ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma']
+        audio: ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma'],
+        document: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'rar', '7z']
       },
       fileTypeNames: {
         image: '图片',
         video: '视频',
-        audio: '音频'
+        audio: '音频',
+        document: '文件'
       },
       uploadConfig: {
         maxSize: 40 * 1024 * 1024,  // 最大上传40MB（通过Cloudinary压缩到20MB以下）
@@ -735,6 +784,30 @@
           localStorage.setItem('quickWebsites', JSON.stringify(newSites));
           this.$message.success('保存成功');
         }).catch(() => {});
+      },
+      getFileIcon(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        const icons = {
+          pdf: 'fas fa-file-pdf',
+          doc: 'fas fa-file-word', docx: 'fas fa-file-word',
+          xls: 'fas fa-file-excel', xlsx: 'fas fa-file-excel',
+          ppt: 'fas fa-file-powerpoint', pptx: 'fas fa-file-powerpoint',
+          txt: 'fas fa-file-lines',
+          zip: 'fas fa-file-zipper', rar: 'fas fa-file-zipper', '7z': 'fas fa-file-zipper'
+        };
+        return icons[ext] || 'fas fa-file';
+      },
+      getFileType(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        const types = {
+          pdf: 'PDF 文档',
+          doc: 'Word 文档', docx: 'Word 文档',
+          xls: 'Excel 表格', xlsx: 'Excel 表格',
+          ppt: 'PowerPoint 演示', pptx: 'PowerPoint 演示',
+          txt: '文本文档',
+          zip: '压缩文件', rar: '压缩文件', '7z': '压缩文件'
+        };
+        return typeMap[ext] || `${ext.toUpperCase()} 文件`;
       }
     },
     mounted() {
