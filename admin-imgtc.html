@@ -29,7 +29,7 @@
                   <el-dropdown-item command="image" :class="{ 'el-dropdown-menu__item--selected': fileType === 'image' }"><i class="fas fa-image"></i> 图片</el-dropdown-item>
                   <el-dropdown-item command="video" :class="{ 'el-dropdown-menu__item--selected': fileType === 'video' }"><i class="fas fa-video"></i> 视频</el-dropdown-item>
                   <el-dropdown-item command="audio" :class="{ 'el-dropdown-menu__item--selected': fileType === 'audio' }"><i class="fas fa-music"></i> 音频</el-dropdown-item>
-                  <el-dropdown-item command="document" :class="{ 'el-dropdown-menu__item--selected': fileType === 'document' }"><i class="fas fa-file"></i> 文件</el-dropdown-item>
+                  <el-dropdown-item command="document" :class="{ 'el-dropdown-menu__item--selected': fileType === 'document' }"><i class="fas fa-folder-open"></i> 文件</el-dropdown-item>
                 </el-dropdown-menu>
               </el-dropdown>
             </el-tooltip>
@@ -221,8 +221,8 @@
                 <div class="file-content">
                   <!-- 文件标题区域 -->
                   <div class="file-header">
-                    <div class="file-avatar" style="display: flex; justify-content: center; align-items: center;">
-                      <i :class="getFileIcon(item.name)" style="font-size: 24px;"></i>
+                    <div class="file-avatar">
+                      <i :class="getFileIcon(item.name)" style="font-size: 32px;"></i>
                     </div>
                     <div class="file-info">
                       <div class="file-title">
