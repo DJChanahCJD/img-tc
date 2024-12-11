@@ -20,9 +20,16 @@ export async function onRequestGet(context) {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Settings error:', error); // 错误记录到服务器日志
+
+    return new Response(JSON.stringify({
+      success: false,
+      message: '获取设置失败，请重试'
+    }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
   }
 }
@@ -39,9 +46,16 @@ export async function onRequestPost(context) {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Settings error:', error); // 错误记录到服务器日志
+
+    return new Response(JSON.stringify({
+      success: false,
+      message: '保存设置失败，请重试'
+    }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
   }
 }

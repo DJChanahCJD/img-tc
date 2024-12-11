@@ -460,4 +460,8 @@ body {
   .el-input-number {
     width: 180px;
   }
+
+  .el-textarea__inner {
+    height: 240px;
+  }
 }

@@ -19,12 +19,21 @@ export async function onRequestPost(context) {
         const isAdmin = request.headers.get('Referer')?.includes(`${url.origin}/admin`);
 
         if (!settings.uploadPublic && !isAdmin) {
-            throw new Error('Upload is not allowed');
+            console.log('Upload is not allowed');
+            return new Response(JSON.stringify({
+                success: false,
+                message: '无权限'
+            }), {
+                status: 403,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
         }
         const uploadLimit = settings.uploadLimit || 20;
         // 检查文件大小是否超过总上传限制
         if (uploadFile.size > uploadLimit * 1024 * 1024) {
-            throw new Error(`File size exceeds maximum limit of ${uploadLimit}MB`);
+            console.log(`File size exceeds maximum limit of ${uploadLimit}MB`);
         }
 
         let mediaType;
