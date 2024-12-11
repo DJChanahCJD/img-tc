@@ -916,11 +916,46 @@
           .catch(() => this.$message.error('修改文件名时出错，请检查网络连接'));
         }).catch(() => {});
       },
-      saveSettings() {
+      // 获取设置
+      async fetchSettings() {
         try {
-          const response = etch('./api/settings', {
+          const response = await fetch("./api/settings", {
+            method: 'GET',
+            credentials: 'include'  // 添加凭证
+          });
+
+          if (response.ok) {
+            const settings = await response.json();
+            this.uploadPublic = settings.uploadPublic ?? true;
+            this.uploadLimit = settings.uploadLimit ?? 20;
+            this.quickWebsites = settings.quickWebsites ?? [
+              { name: '原版后台', url: './admin.html', icon: 'fas fa-suitcase' },
+              { name: '瀑布流', url: './admin-waterfall.html', icon: 'fas fa-wind' },
+              { name: 'Movavi', url: 'https://www.movavi.com/zh/movavi-video-converter.html', icon: 'fas fa-file-video' },
+              { name: 'FreeConvert', url: 'https://www.freeconvert.com/zh/video-compressor', icon: 'fas fa-file' },
+              { name: 'YouCompress', url: 'https://www.youcompress.com/zh-cn/', icon: 'fas fa-file-zipper' },
+              { name: 'Cloudinary', url: 'https://console.cloudinary.com/', icon: 'fas fa-cloud' }
+            ];
+          } else {
+            console.warn('使用默认设置');
+          }
+        } catch (error) {
+          console.warn('获取设置失败，使用默认值:', error);
+          // 静默失败，使用默认值
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      // 保存设置
+      async saveSettings() {
+        try {
+          const response = await fetch("./api/settings", {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
               uploadPublic: this.uploadPublic,
               uploadLimit: this.uploadLimit,
@@ -928,60 +963,67 @@
             })
           });
 
-          if (!response.ok) throw new Error('保存失败');
+          if (!response.ok) throw new Error('保存设置失败');
           this.$message.success('设置已保存');
         } catch (error) {
-          throw new Error('保存设置失败：' + error.message);
+          this.$message.error('保存设置失败：' + error.message);
+          throw error;
         }
-      },
-      fetchSettings() {
-        // 加载设置
-        try {
-          const response = fetch('./api/settings');
-          if (response.ok) {
-            const settings = response.json();
-            this.uploadPublic = settings.uploadPublic;
-            this.uploadLimit = settings.uploadLimit;
-            this.quickWebsites = settings.quickWebsites;
-          }
-        } catch (error) {
-          console.error('加载设置失败:', error);
-        }
-        this.loading = false;
-      },
+      }
     },
     mounted() {
+      // 先添加事件监听器
       window.addEventListener('resize', this.calculatePageSize);
       this.updateWindowWidth();
-      this.fetchSettings();
-      fetch("./api/manage/check", { method: 'GET', credentials: 'include' })
-        .then(response => response.text())
-        .then(result => result === "true" ? this.showLogoutButton = true : window.location.href = "./api/manage/login")
-        .catch(() => this.$message.error('同步数据时出错，请检查网络连接'));
 
-      // 获取文件列表数据
-      fetch("./api/manage/list", { method: 'GET', credentials: 'include' })
-        .then(response => response.json())
-        .then(result => {
-          console.log("result: ", result);
-          this.tableData = result.map(file => ({
-            ...file,
-            selected: false,
-            metadata: {
-              ...file.metadata,
-              liked: file.metadata.liked ?? false,
-              fileName: file.metadata.fileName ?? file.name,
-              fileSize: file.metadata.fileSize ?? 0
-            }
-          }));
-          this.updateStats();
-          // 恢复设置
-          this.sortOption = localStorage.getItem('sortOption') || this.sortOption;
-          this.sortData(this.tableData);
-          this.fileType = localStorage.getItem('fileType') || this.fileType;
-          this.switchFileType(this.fileType);
+      // 并行执行所有异步操作
+      Promise.all([
+        // 获取设置（静默失败）
+        this.fetchSettings().catch(() => {}),
+
+        // 检查登录状态
+        fetch("./api/manage/check", {
+          method: 'GET',
+          credentials: 'include'
         })
-        .catch(() => this.$message.error('同步数据时出错，请检查网络连接'));
+          .then(response => response.text())
+          .then(result => {
+            if (result === "true") {
+              this.showLogoutButton = true;
+            } else {
+              window.location.href = "./api/manage/login";
+            }
+          }),
+
+        // 获取文件列表
+        fetch("./api/manage/list", {
+          method: 'GET',
+          credentials: 'include'
+        })
+          .then(response => response.json())
+          .then(result => {
+            this.tableData = result.map(file => ({
+              ...file,
+              selected: false,
+              metadata: {
+                ...file.metadata,
+                liked: file.metadata.liked ?? false,
+                fileName: file.metadata.fileName ?? file.name,
+                fileSize: file.metadata.fileSize ?? 0
+              }
+            }));
+            this.updateStats();
+
+            // 恢复设置
+            this.sortOption = localStorage.getItem('sortOption') || this.sortOption;
+            this.sortData(this.tableData);
+            this.fileType = localStorage.getItem('fileType') || this.fileType;
+            this.switchFileType(this.fileType);
+          })
+      ]).catch(error => {
+        console.error('初始化失败:', error);
+        this.$message.error('同步数据时出错，请检查网络连接');
+      });
     },
     beforeDestroy() {
       window.removeEventListener('resize', this.calculatePageSize);
