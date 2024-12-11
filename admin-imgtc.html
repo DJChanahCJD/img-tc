@@ -916,9 +916,9 @@
           .catch(() => this.$message.error('修改文件名时出错，请检查网络连接'));
         }).catch(() => {});
       },
-      async saveSettings() {
+      saveSettings() {
         try {
-          const response = await fetch('./api/settings', {
+          const response = etch('./api/settings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -935,12 +935,12 @@
         }
       }
     },
-    async fetchSettings() {
+    fetchSettings() {
       // 加载设置
       try {
-        const response = await fetch('./api/settings');
+        const response = fetch('./api/settings');
         if (response.ok) {
-          const settings = await response.json();
+          const settings = response.json();
           this.uploadPublic = settings.uploadPublic;
           this.uploadLimit = settings.uploadLimit;
           this.quickWebsites = settings.quickWebsites;
