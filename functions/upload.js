@@ -51,16 +51,16 @@ export async function onRequestPost(context) {
 
         // 根据文件类型选择合适的上传方式
         let apiEndpoint;
-        if (uploadFile.type.startsWith('image/')) {
-            telegramFormData.append("photo", uploadFile);
-            apiEndpoint = 'sendPhoto';
-        } else if (uploadFile.type.startsWith('audio/')) {
-            telegramFormData.append("audio", uploadFile);
-            apiEndpoint = 'sendAudio';
-        } else {
+        // if (uploadFile.type.startsWith('image/')) {
+        //     telegramFormData.append("photo", uploadFile);
+        //     apiEndpoint = 'sendPhoto';
+        // } else if (uploadFile.type.startsWith('audio/')) {
+        //     telegramFormData.append("audio", uploadFile);
+        //     apiEndpoint = 'sendAudio';
+        // } else {
             telegramFormData.append("document", uploadFile);
             apiEndpoint = 'sendDocument';
-        }
+        // }
 
         const apiUrl = `https://api.telegram.org/bot${env.TG_Bot_Token}/${apiEndpoint}`;
         console.log('Sending request to:', apiUrl);
@@ -133,16 +133,17 @@ function getFileId(response) {
     if (!response.ok || !response.result) return null;
 
     const result = response.result;
-    if (result.photo) {
-        // Telegram 会为图片生成多个不同尺寸的版本
-        // 使用 reduce 找到最大尺寸的版本
-        return result.photo.reduce((prev, current) =>
-            (prev.file_size > current.file_size) ? prev : current
-        ).file_id;
-    }
-    if (result.document) return result.document.file_id;
-    if (result.video) return result.video.file_id;
-    if (result.audio) return result.audio.file_id;
+    return result.document.file_id;
+    // if (result.photo) {
+    //     // Telegram 会为图片生成多个不同尺寸的版本
+    //     // 使用 reduce 找到最大尺寸的版本
+    //     return result.photo.reduce((prev, current) =>
+    //         (prev.file_size > current.file_size) ? prev : current
+    //     ).file_id;
+    // }
+    // if (result.document) return result.document.file_id;
+    // if (result.video) return result.video.file_id;
+    // if (result.audio) return result.audio.file_id;
 
-    return null;
+    // return null;
 }
