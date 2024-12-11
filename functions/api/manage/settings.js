@@ -5,6 +5,7 @@ export async function onRequestGet(context) {
   try {
     const settings = await env.imgtc_settings.get('settings', { type: 'json' }) || {
       uploadPublic: true,  // 默认允许公开上传
+      accessPublic: true,  // 默认允许公开访问
       uploadLimit: 20,     // 默认20MB
       quickWebsites: [     // 默认快捷方式
         { name: '原版后台', url: './admin.html', icon: 'fas fa-suitcase' },

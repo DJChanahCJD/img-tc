@@ -4,8 +4,14 @@ export async function onRequest(context) {
         env,
         params,
     } = context;
+    const settings = await env.imgtc_settings.get('settings', { type: 'json' });
 
+    const accessPublic = settings?.accessPublic || false;
+    const isAdmin = request.headers.get('Referer')?.includes(`${url.origin}/admin`);
     const url = new URL(request.url);
+    if (!accessPublic && !isAdmin) {
+        return new Response("Access denied", { status: 403 });
+    }
     let fileUrl = 'https://telegra.ph/' + url.pathname + url.search
     if (url.pathname.length > 39) { // 路径长度大于39位，说明是Telegram Bot API 上传的文件
         const formdata = new FormData();
@@ -37,7 +43,6 @@ export async function onRequest(context) {
     console.log(response.ok, response.status);
 
     // Allow the admin page to directly view the image
-    const isAdmin = request.headers.get('Referer')?.includes(`${url.origin}/admin`);
     if (isAdmin) {
         return response;
     }

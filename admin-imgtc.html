@@ -290,6 +290,7 @@
         }
       },
       uploadPublic: true,
+      accessPublic: true,
       uploadLimit: 20,
       uploadConfig: {
         maxSize: 20 * 1024 * 1024,  // 最大上传20MB
@@ -708,77 +709,179 @@
       handleWebsite(url) { window.open(url, '_blank'); },
       // 编辑设置中心
       editSettings() {
-        // 格式化当前设置为文本
-        const settingsText = [
-          this.uploadPublic,           // 第一行：是否允许公开上传
-          this.uploadLimit,             // 第二行：上传大小限制
-          ...this.quickWebsites.map(site => `${site.name}|${site.url}|${site.icon}`)  // 后续行：快捷方式
-        ].join('\n');
+        // 定义设置项配置
+        const SETTINGS_CONFIG = {
+          uploadPublic: {
+            type: 'boolean',
+            label: '允许公开上传',
+            description: '是否允许未登录用户上传文件',
+            default: true,
+            validator: value => /^(true|false)$/i.test(value.trim()),
+            errorMsg: '必须是 true 或 false'
+          },
+          accessPublic: {
+            type: 'boolean',
+            label: '允许公开访问',
+            description: '是否允许未登录用户查看文件',
+            default: true,
+            validator: value => /^(true|false)$/i.test(value.trim()),
+            errorMsg: '必须是 true 或 false'
+          },
+          uploadLimit: {
+            type: 'number',
+            label: '上传大小限制',
+            description: '单个文件的最大上传大小（MB）',
+            default: 20,
+            validator: value => {
+              const num = parseInt(value);
+              return !isNaN(num) && num >= 5 && num <= 1024;
+            },
+            errorMsg: '必须是5-1024之间的数字'
+          },
+          quickWebsites: {
+            type: 'array',
+            label: '快捷方式',
+            description: '常用网站快捷方式配置',
+            default: [],
+            validator: value => {
+              const [name, url, icon = 'fas fa-link'] = value.split('|');
+              return name &&
+                     url &&
+                     (/^https?:\/\/.+/.test(url) || /^\.\/.*/.test(url)) &&
+                     /^(fas?|fa-brands|fa-regular|fa-solid)\s+fa-[a-z0-9-]+$/.test(icon);
+            },
+            errorMsg: '格式：名称|网址|图标类名'
+          }
+        };
 
+        // 格式化当前设置为文本
+        const formatSettingsToText = () => {
+          return [
+            this.uploadPublic,
+            this.accessPublic,
+            this.uploadLimit,
+            ...this.quickWebsites.map(site => `${site.name}|${site.url}|${site.icon}`)
+          ].join('\n');
+        };
+
+        // 生成设置说明
+        const generateSettingsGuide = () => {
+          const guideContent = Object.entries(SETTINGS_CONFIG).map(([key, config], index) => {
+            if (config.type === 'array') {
+              return `<p>后续行：${config.label}，${config.description}（${config.errorMsg}）</p>`;
+            }
+            return `<p>第${index + 1}行：${config.label}（${config.description}）</p>`;
+          }).join('');
+
+          return `
+            <div class="settings-guide">
+              <div class="guide-header">
+                <span>设置说明</span>
+                <el-tooltip class="guide-tooltip" effect="light" placement="right">
+                  <div slot="content">
+                    <h4>详细说明</h4>
+                    ${Object.entries(SETTINGS_CONFIG).map(([key, config]) => `
+                      <div class="setting-item">
+                        <h5>${config.label}</h5>
+                        <p>${config.description}</p>
+                        ${config.type === 'boolean' ? `
+                          <ul>
+                            <li>true - 启用</li>
+                            <li>false - 禁用</li>
+                          </ul>
+                        ` : ''}
+                        ${config.type === 'number' ? `
+                          <p>有效范围：${config.validator.toString().match(/\d+/g).join('-')}</p>
+                        ` : ''}
+                      </div>
+                    `).join('')}
+                  </div>
+                  <i class="fas fa-question-circle"></i>
+                </el-tooltip>
+              </div>
+              <div class="guide-content">
+                ${guideContent}
+                <p>图标请在 <a href="https://fontawesome.com/v6/search?m=free" target="_blank">Font Awesome</a> 中选择</p>
+              </div>
+            </div>
+          `;
+        };
+
+        // 验证设置内容
+        const validateSettings = (value) => {
+          const lines = value.split('\n');
+          const basicSettings = Object.entries(SETTINGS_CONFIG).filter(([, config]) => config.type !== 'array');
+
+          if (lines.length < basicSettings.length) {
+            return `至少需要填写前${basicSettings.length}行基本设置`;
+          }
+
+          // 验证基本设置
+          for (let i = 0; i < basicSettings.length; i++) {
+            const [key, config] = basicSettings[i];
+            if (!config.validator(lines[i])) {
+              return `第${i + 1}行：${config.errorMsg}`;
+            }
+          }
+
+          // 验证快捷方式
+          const quickWebsites = lines.slice(basicSettings.length);
+          if (quickWebsites.length > 10) {
+            return '快捷方式不能超过10个';
+          }
+
+          const websiteConfig = SETTINGS_CONFIG.quickWebsites;
+          for (let i = 0; i < quickWebsites.length; i++) {
+            const line = quickWebsites[i].trim();
+            if (!line) continue;
+            if (!websiteConfig.validator(line)) {
+              return `第${i + basicSettings.length + 1}行：${websiteConfig.errorMsg}`;
+            }
+          }
+
+          return true;
+        };
+
+        // 保存设置
+        const saveSettings = (lines) => {
+          const basicSettings = Object.keys(SETTINGS_CONFIG).filter(key => SETTINGS_CONFIG[key].type !== 'array');
+
+          // 更新基本设置
+          basicSettings.forEach((key, index) => {
+            const config = SETTINGS_CONFIG[key];
+            const value = lines[index].trim();
+            this[key] = config.type === 'boolean' ?
+              value.toLowerCase() === 'true' :
+              config.type === 'number' ? parseInt(value) : value;
+          });
+
+          // 更新快捷方式
+          this.quickWebsites = lines.slice(basicSettings.length)
+            .filter(line => line.trim())
+            .map(line => {
+              const [name, url, icon = 'fas fa-link'] = line.split('|');
+              return {
+                name: name.trim(),
+                url: url.trim(),
+                icon: icon.trim()
+              };
+            });
+
+          this.saveSettings();
+        };
+
+        // 显示设置对话框
         this.$prompt('', '设置中心', {
           inputType: 'textarea',
-          inputValue: settingsText,
+          inputValue: formatSettingsToText(),
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           dangerouslyUseHTMLString: true,
           customClass: 'settings-edit-dialog',
-          message: `
-            <div class="el-message-box__info">
-              <i class="el-message-box__status el-icon-info"></i>
-              <div class="el-message-box__message" style="font-size: 14px; color: #666;">
-                <p>第1行：是否允许公开上传（true/false）</p>
-                <p>第2行：上传大小限制（MB，5-1024）</p>
-                <p>后续行：快捷方式，格式：名称|网址|图标类名</p>
-                <p>图标请在 <a href="https://fontawesome.com/v6/search?m=free" target="_blank" style="color: #409EFF;">Font Awesome</a> 中选择</p>
-              </div>
-            </div>
-          `,
-          inputValidator: (value) => {
-            const lines = value.split('\n');
-            if (lines.length < 2) return '至少需要填写前两行设置';
-
-            // 验证第一行：禁用公开上传设置
-            if (!/^(true|false)$/i.test(lines[0].trim())) {
-              return '第1行必须是 true 或 false';
-            }
-
-            // 验证第二行：上传限制
-            const limit = parseInt(lines[1]);
-            if (isNaN(limit) || limit < 5 || limit > 1024) {
-              return '第2行必须是5-1024之间的数字';
-            }
-
-            // 验证快捷方式数量
-            if (lines.length > 12) return '快捷方式不能超过10个';
-
-            // 验证快捷方式格式
-            for (let i = 2; i < lines.length; i++) {
-              const line = lines[i].trim();
-              if (!line) continue;
-
-              const [name, url, icon = 'fas fa-link'] = line.split('|');
-              if (!name || !url) return `第${i + 1}行：名称和网址不能为空`;
-              if (!(/^https?:\/\/.+/.test(url) || /^\.\/.*/.test(url))) return `第${i + 1}行：网址格式错误`;
-              if (!/^(fas?|fa-brands|fa-regular|fa-solid)\s+fa-[a-z0-9-]+$/.test(icon)) return `第${i + 1}行：图标类名格式错误`;
-            }
-            return true;
-          }
+          message: generateSettingsGuide(),
+          inputValidator: validateSettings
         }).then(({ value }) => {
-          const lines = value.split('\n');
-
-          // 更新设置
-          this.uploadPublic = lines[0].trim().toLowerCase() === 'true';
-          this.uploadLimit = parseInt(lines[1]);
-
-          // 更新快捷方式
-          this.quickWebsites = lines.slice(2)
-            .filter(line => line.trim())
-            .map(line => {
-              const [name, url, icon = 'fas fa-link'] = line.split('|');
-              return { name: name.trim(), url: url.trim(), icon: icon.trim() };
-            });
-
-          this.saveSettings();
+          saveSettings(value.split('\n'));
         }).catch(() => {});
       },
       getFileIcon(filename) {
