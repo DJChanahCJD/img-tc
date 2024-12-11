@@ -6,7 +6,7 @@ export async function onRequest(context) {
     } = context;
     const settings = await env.imgtc_settings.get('settings', { type: 'json' });
 
-    const accessPublic = settings?.accessPublic ?? false;
+    const accessPublic = settings?.accessPublic ?? true;
     const isAdmin = request.headers.get('Referer')?.includes(`${url.origin}/admin`);
     const url = new URL(request.url);
     if (!accessPublic && !isAdmin) {
