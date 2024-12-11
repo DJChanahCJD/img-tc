@@ -713,7 +713,8 @@
       // 编辑设置
       editSettings() {
         const h = this.$createElement;
-        // 初始化 websiteText
+
+        // 初始化 websiteText，确保有内容
         this.websiteText = this.quickWebsites
           .map(site => `${site.name}|${site.url}|${site.icon}`)
           .join('\n');
@@ -737,12 +738,12 @@
               ]),
               h('el-switch', {
                 props: {
-                  value: !this.uploadPublic,
-                  activeColor: '#ff4949',
-                  inactiveColor: '#13ce66'
+                  value: !this.uploadPublic,  // 取反显示
+                  activeColor: '#ff4949',     // 红色表示禁用
+                  inactiveColor: '#13ce66'    // 绿色表示启用
                 },
                 on: {
-                  change: val => this.uploadPublic = !val
+                  change: val => this.uploadPublic = !val  // 取反保存
                 }
               })
             ]),
@@ -763,7 +764,7 @@
               ]),
               h('el-input-number', {
                 props: {
-                  modelValue: this.uploadLimit,
+                  value: this.uploadLimit,  // 使用 value 而不是 modelValue
                   min: 5,
                   max: 1024,
                   step: 5,
@@ -771,7 +772,7 @@
                   controlsPosition: 'right'
                 },
                 on: {
-                  'update:modelValue': val => this.uploadLimit = val
+                  input: val => this.uploadLimit = val  // 使用 input 事件
                 }
               })
             ]),
@@ -794,11 +795,11 @@
                 props: {
                   type: 'textarea',
                   rows: 8,
-                  modelValue: this.websiteText,
+                  value: this.websiteText,  // 使用 value
                   placeholder: '示例：\nGoogle|https://google.com|fab fa-google'
                 },
                 on: {
-                  'update:modelValue': val => this.websiteText = val
+                  input: val => this.websiteText = val  // 使用 input 事件
                 }
               }),
               h('div', { class: 'setting-tips' }, [
