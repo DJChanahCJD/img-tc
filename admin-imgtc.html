@@ -610,7 +610,7 @@
         (navigator.clipboard?.writeText(links) || this.copyToClipboardFallback(links))
           .then(() => this.$message.success('批量复制链接成功~'));
       },
-      handleBatchBlockOrUnblock(type) {  // 批量加入黑/白名单
+      handleBatchBlockOrUnblock(type) {  // 批量加入黑/��名单
         if (type !== 'Block' && type !== 'White') { this.$message.error('无效的操作类型'); return; }
         const typeToName = { Block: '黑名单', White: '白名单' };
         this.$confirm(`确定要将这 ${this.selectedFiles.length} 个文件加入${typeToName[type]}吗?`, '提示', {
@@ -993,6 +993,8 @@
             } else {
               window.location.href = "./api/manage/login";
             }
+          }).catch(() => {
+            this.$message.error('无法获取认证信息，请检查网络连接');
           }),
 
         // 获取文件列表
@@ -1006,23 +1008,30 @@
               ...file,
               selected: false,
               metadata: {
-                ...file.metadata,
-                liked: file.metadata.liked ?? false,
-                fileName: file.metadata.fileName ?? file.name,
-                fileSize: file.metadata.fileSize ?? 0
+                liked: (file.metadata?.liked ?? false),
+                fileName: (file.metadata?.fileName ?? file.name),
+                fileSize: (file.metadata?.fileSize ?? 0),
+                ...(file.metadata || {})  // 保留其他可能的 metadata 字段
               }
             }));
+
+            // 更新统计信息
             this.updateStats();
 
-            // 恢复设置
+            // 恢复排序设置
             this.sortOption = localStorage.getItem('sortOption') || this.sortOption;
             this.sortData(this.tableData);
+
+            // 恢复文件类型过滤设置
             this.fileType = localStorage.getItem('fileType') || this.fileType;
             this.switchFileType(this.fileType);
           })
       ]).catch(error => {
         console.error('初始化失败:', error);
-        this.$message.error('同步数据时出错，请检查网络连接');
+        // 只在真正的错误时显示提示
+        if (error.name !== 'TypeError' || !error.message.includes('undefined')) {
+          this.$message.error('同步数据时出错，请检查网络连接');
+        }
       });
     },
     beforeDestroy() {
