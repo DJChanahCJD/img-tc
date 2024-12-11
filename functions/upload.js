@@ -1,5 +1,4 @@
 import { errorHandling, telemetryData } from "./utils/middleware";
-import { maxUploadSize, compressionThreshold, processMediaWithCloudinary } from "./utils/cloudinary";
 export async function onRequestPost(context) {
     const { request, env } = context;
 
@@ -15,9 +14,16 @@ export async function onRequestPost(context) {
             throw new Error('No file uploaded');
         }
 
+        const url = new URL(request.url);
+        const isAdmin = request.headers.get('Referer')?.includes(`${url.origin}/admin`);
+        const uploadPublic = localStorage.getItem('uploadPublic') || false;
+        if (!uploadPublic && !isAdmin) {
+            throw new Error('Upload is not allowed');
+        }
+        const uploadLimit = localStorage.getItem('uploadLimit') || 20;
         // 检查文件大小是否超过总上传限制
-        if (uploadFile.size > maxUploadSize) {
-            throw new Error(`File size exceeds maximum limit of ${maxUploadSize / (1024 * 1024)}MB`);
+        if (uploadFile.size > uploadLimit * 1024 * 1024) {
+            throw new Error(`File size exceeds maximum limit of ${uploadLimit}MB`);
         }
 
         let mediaType;
@@ -27,23 +33,6 @@ export async function onRequestPost(context) {
             mediaType = 'video';
         } else if (uploadFile.type.startsWith('audio/')) {
             mediaType = 'audio';
-        }
-
-        // 处理需要压缩的文件
-        if (mediaType && uploadFile.size > compressionThreshold) {
-            try {
-                console.log(`Processing ${mediaType} with compression...`);
-
-                uploadFile = await processMediaWithCloudinary(
-                    uploadFile,
-                    mediaType,
-                    env
-                );
-
-                throw new Error('processed File' + JSON.stringify(uploadFile));
-            } catch (processingError) {
-                console.error('Processing failed:', processingError);
-            }
         }
 
         // 准备上传到 Telegram

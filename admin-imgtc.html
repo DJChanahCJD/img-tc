@@ -39,7 +39,7 @@
                 <el-dropdown-menu slot="dropdown">
                   <el-dropdown-item command="dateDesc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'dateDesc' }"><i class="fas fa-sort-amount-down"></i> 按时间倒序</el-dropdown-item>
                   <el-dropdown-item command="nameAsc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'nameAsc' }"><i class="fas fa-sort-alpha-up"></i> 按名称升序</el-dropdown-item>
-                  <el-dropdown-item command="sizeDesc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'sizeDesc' }"><i class="fas fa-sort-amount-down"></i> 按大小倒序</el-dropdown-item>
+                  <el-dropdown-item command="sizeDesc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'sizeDesc' }"><i class="fas fa-sort-numeric-down"></i> 按大小倒序</el-dropdown-item>
                 </el-dropdown-menu>
               </el-dropdown>
             </el-tooltip>
@@ -84,7 +84,7 @@
                 <el-dropdown-menu slot="dropdown">
                   <el-dropdown-item command="selectAllInPage"><i class="fas fa-check-square"></i> 全选当前页</el-dropdown-item>
                   <el-dropdown-item command="checkBrokenFiles"><i class="fas fa-wrench"></i> 检测失效文件</el-dropdown-item>
-                  <el-dropdown-item command="editWebsites"><i class="fas fa-edit"></i> 编辑快捷方式</el-dropdown-item>
+                  <el-dropdown-item command="settings"><i class="fas fa-edit"></i> 设置</el-dropdown-item>
                 </el-dropdown-menu>
               </el-dropdown>
             </el-tooltip>
@@ -289,6 +289,7 @@
           count: 0
         }
       },
+      uploadPublic: false,
       uploadConfig: {
         maxSize: 20 * 1024 * 1024,  // 最大上传20MB
         maxConcurrent: 3
@@ -646,7 +647,7 @@
         switch (command) {
           case 'selectAllInPage': this.selectAllInPage(); break;
           case 'checkBrokenFiles': this.checkBrokenFiles(); break;
-          case 'editWebsites': this.editWebsites(); break;
+          case 'settings': this.editSettings(); break;
         }
       },
       switchFileType(type) {  // 切换文件类型
@@ -706,50 +707,128 @@
       },
       // 处理网站点击
       handleWebsite(url) { window.open(url, '_blank'); },
-      // 编辑快捷方式
-      editWebsites() {
-        const websiteText = this.quickWebsites
-          .map(site => `${site.name}|${site.url}|${site.icon}`)
-          .join('\n');
+      // 编辑设置
+      editSettings() {
+        // 使用 $msgbox 创建统一的设置对话框
+        this.$msgbox({
+          title: '设置中心',
+          message: h => h('div', { class: 'settings-dialog' }, [
+            // 1. 公开上传设置
+            h('div', { class: 'setting-item' }, [
+              h('div', { class: 'setting-label' }, [
+                h('span', '允许公开上传'),
+                h('el-tooltip', {
+                  props: { content: '开启后允许在非管理页面上传文件', placement: 'right' }
+                }, [h('i', { class: 'fas fa-question-circle' })])
+              ]),
+              h('el-switch', {
+                props: { value: this.uploadPublic },
+                on: { input: val => this.uploadPublic = val }
+              })
+            ]),
 
-        this.$prompt('', '编辑快捷方式', {
-          inputType: 'textarea',
-          inputValue: websiteText,
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          dangerouslyUseHTMLString: true,
-          customClass: 'website-edit-dialog',
-          message: `
-            <div>
-              每行一个网站，格式：名称|网址|图标类名<br>
-              图标需在 <a href="https://fontawesome.com/v6/search?m=free" target="_blank" style="color: #409EFF; text-decoration: underline">Font Awesome</a> 中选择
-            </div>
-          `,
-          inputValidator: (value) => {
-            const lines = value.split('\n');
-            if (lines.length > 10) return '不能超过10行';
-            for (let line of lines) {
-              if (!line.trim()) continue;
-              const [name, url, icon = 'fas fa-link'] = line.split('|');
-              if (!name || !url) return '名称和网址不能为空：' + line;
-              if (!(/^https?:\/\/.+/.test(url) || /^\.\/.*/.test(url))) return '网址格式错误：'+line;
-              if (!/^(fas?|fa-brands|fa-regular|fa-solid)\s+fa-[a-z0-9-]+$/.test(icon)) {
-                return '图标类名格式错误：' + line;
+            // 2. 上传大小限制
+            h('div', { class: 'setting-item' }, [
+              h('div', { class: 'setting-label' }, [
+                h('span', '上传大小限制 (MB)'),
+                h('el-tooltip', {
+                  props: { content: '允许设置范围：5-1024MB', placement: 'right' }
+                }, [h('i', { class: 'fas fa-question-circle' })])
+              ]),
+              h('el-input-number', {
+                props: {
+                  value: this.uploadLimit,
+                  min: 5,
+                  max: 1024,
+                  step: 5,
+                  controls: true
+                },
+                on: { input: val => this.uploadLimit = val }
+              })
+            ]),
+
+            // 3. 快捷方式设置
+            h('div', { class: 'setting-item setting-websites' }, [
+              h('div', { class: 'setting-label' }, [
+                h('span', '快捷方式'),
+                h('el-tooltip', {
+                  props: {
+                    content: '每行一个网站，格式：名称|网址|图标类名\n图标请在 Font Awesome 中选择',
+                    placement: 'right'
+                  }
+                }, [h('i', { class: 'fas fa-question-circle' })])
+              ]),
+              h('el-input', {
+                props: {
+                  type: 'textarea',
+                  rows: 8,
+                  value: this.quickWebsites
+                    .map(site => `${site.name}|${site.url}|${site.icon}`)
+                    .join('\n'),
+                  placeholder: '示例：\nGoogle|https://google.com|fab fa-google'
+                },
+                on: { input: val => this.websiteText = val }
+              }),
+              h('div', { class: 'setting-help' }, [
+                h('a', {
+                  attrs: {
+                    href: 'https://fontawesome.com/v6/search?m=free',
+                    target: '_blank'
+                  }
+                }, '查看可用图标')
+              ])
+            ])
+          ]),
+          beforeClose: (action, instance, done) => {
+            if (action === 'confirm') {
+              // 验证快捷方式格式
+              const validateWebsites = this.websiteText.split('\n')
+                .filter(line => line.trim())
+                .every(line => {
+                  const [name, url, icon = 'fas fa-link'] = line.split('|');
+                  return name &&
+                         url &&
+                         (/^https?:\/\/.+/.test(url) || /^\.\/.*/.test(url)) &&
+                         /^(fas?|fa-brands|fa-regular|fa-solid)\s+fa-[a-z0-9-]+$/.test(icon);
+                });
+
+              if (!validateWebsites) {
+                this.$message.error('快捷方式格式错误，请检查');
+                return;
               }
+
+              // 保存所有设置
+              try {
+                // 保存公开上传设置
+                localStorage.setItem('uploadPublic', this.uploadPublic);
+
+                // 保存上传限制
+                localStorage.setItem('uploadLimit', this.uploadLimit);
+
+                // 保存快捷方式
+                const newSites = this.websiteText.split('\n')
+                  .filter(line => line.trim())
+                  .map(line => {
+                    const [name, url, icon = 'fas fa-link'] = line.split('|');
+                    return { name, url, icon };
+                  });
+                this.quickWebsites = newSites;
+                localStorage.setItem('quickWebsites', JSON.stringify(newSites));
+
+                this.$message.success('设置已保存');
+                done();
+              } catch (error) {
+                this.$message.error('保存设置失败：' + error.message);
+              }
+            } else {
+              done();
             }
-            return true;
-          }
-        }).then(({ value }) => {
-          const newSites = value.split('\n')
-            .filter(line => line.trim())
-            .map(line => {
-              const [name, url, icon = 'fas fa-link'] = line.split('|');
-              return { name, url, icon };
-            });
-          this.quickWebsites = newSites;
-          localStorage.setItem('quickWebsites', JSON.stringify(newSites));
-          this.$message.success('保存成功');
-        }).catch(() => {});
+          },
+          showCancelButton: true,
+          confirmButtonText: '保存全部设置',
+          cancelButtonText: '取消',
+          customClass: 'settings-dialog'
+        });
       },
       getFileIcon(filename) {
         const ext = filename.split('.').pop().toLowerCase();
