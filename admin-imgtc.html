@@ -770,6 +770,23 @@
           </div>
         `;
 
+        const formatSettingsToText = () => {
+          // 获取基本设置
+          const basicSettings = [
+            this.uploadPublic.toString(),
+            this.accessPublic.toString(),
+            this.uploadLimit.toString(),
+          ];
+
+          // 格式化快捷方式
+          const quickWebsitesText = this.quickWebsites.map(site =>
+            `${site.name}|${site.url}|${site.icon}`
+          );
+
+          // 合并所有设置并返回
+          return [...basicSettings, ...quickWebsitesText].join('\n');
+        }
+
         // 验证设置内容
         const validateSettings = (value) => {
           const lines = value.split('\n');
@@ -957,22 +974,6 @@
         }
       },
 
-      formatSettingsToText() {
-        // 获取基本设置
-        const basicSettings = [
-          this.uploadPublic.toString(),
-          this.accessPublic.toString(),
-          this.uploadLimit.toString(),
-        ];
-
-        // 格式化快捷方式
-        const quickWebsitesText = this.quickWebsites.map(site =>
-          `${site.name}|${site.url}|${site.icon}`
-        );
-
-        // 合并所有设置并返回
-        return [...basicSettings, ...quickWebsitesText].join('\n');
-      }
     },
     mounted() {
       // 先添加事件监听器
