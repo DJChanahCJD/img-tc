@@ -1,4 +1,5 @@
 import { errorHandling, telemetryData } from "./utils/middleware";
+
 export async function onRequestPost(context) {
     const { request, env } = context;
 
@@ -9,43 +10,14 @@ export async function onRequestPost(context) {
         await errorHandling(context);
         telemetryData(context);
 
-        let uploadFile = formData.get('file');
+        const uploadFile = formData.get('file');
         if (!uploadFile) {
             throw new Error('No file uploaded');
         }
 
-        const url = new URL(request.url);
-        const settings = await fetch(`${url.origin}/api/manage/settings`);
-        const isAdmin = request.headers.get('Referer')?.includes(`${url.origin}/admin`);
+        const fileName = uploadFile.name;
+        const fileExtension = fileName.split('.').pop().toLowerCase();
 
-        if (!settings.uploadPublic && !isAdmin) {
-            console.log('Upload is not allowed');
-            return new Response(JSON.stringify({
-                success: false,
-                message: '无权限'
-            }), {
-                status: 403,
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-        }
-        const uploadLimit = settings.uploadLimit || 20;
-        // 检查文件大小是否超过总上传限制
-        if (uploadFile.size > uploadLimit * 1024 * 1024) {
-            console.log(`File size exceeds maximum limit of ${uploadLimit}MB`);
-        }
-
-        let mediaType;
-        if (uploadFile.type.startsWith('image/')) {
-            mediaType = 'image';
-        } else if (uploadFile.type.startsWith('video/')) {
-            mediaType = 'video';
-        } else if (uploadFile.type.startsWith('audio/')) {
-            mediaType = 'audio';
-        }
-
-        // 准备上传到 Telegram
         const telegramFormData = new FormData();
         telegramFormData.append("chat_id", env.TG_Chat_ID);
 
@@ -88,9 +60,6 @@ export async function onRequestPost(context) {
             throw new Error('Failed to get file ID');
         }
 
-        const fileExtension = uploadFile.name.split('.').pop();
-        const fileName = uploadFile.name;
-
         // 将文件信息保存到 KV 存储
         if (env.img_url) {
             await env.img_url.put(`${fileId}.${fileExtension}`, "", {
@@ -99,8 +68,8 @@ export async function onRequestPost(context) {
                     ListType: "None",
                     Label: "None",
                     liked: false,
-                    fileName: fileName,  // 添加原始文件名
-                    fileSize: uploadFile.size
+                    fileName: fileName,
+                    fileSize: uploadFile.size,
                 }
             });
         }
@@ -112,17 +81,12 @@ export async function onRequestPost(context) {
                 headers: { 'Content-Type': 'application/json' }
             }
         );
-
     } catch (error) {
         console.error('Upload error:', error);
         return new Response(
-            JSON.stringify({
-                error: error.message,
-                details: error.stack,
-                env: env
-            }),
+            JSON.stringify({ error: error.message }),
             {
-                status: error.message.includes('exceeds maximum limit') ? 413 : 500,
+                status: 500,
                 headers: { 'Content-Type': 'application/json' }
             }
         );
@@ -133,17 +97,14 @@ function getFileId(response) {
     if (!response.ok || !response.result) return null;
 
     const result = response.result;
-    return result.document.file_id;
     // if (result.photo) {
-    //     // Telegram 会为图片生成多个不同尺寸的版本
-    //     // 使用 reduce 找到最大尺寸的版本
     //     return result.photo.reduce((prev, current) =>
     //         (prev.file_size > current.file_size) ? prev : current
     //     ).file_id;
     // }
-    // if (result.document) return result.document.file_id;
+    if (result.document) return result.document.file_id;
     // if (result.video) return result.video.file_id;
     // if (result.audio) return result.audio.file_id;
 
-    // return null;
+    return null;
 }
