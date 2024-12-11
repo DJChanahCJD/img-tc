@@ -933,26 +933,27 @@
         } catch (error) {
           throw new Error('保存设置失败：' + error.message);
         }
-      }
-    },
-    fetchSettings() {
-      // 加载设置
-      try {
-        const response = fetch('./api/settings');
-        if (response.ok) {
-          const settings = response.json();
-          this.uploadPublic = settings.uploadPublic;
-          this.uploadLimit = settings.uploadLimit;
-          this.quickWebsites = settings.quickWebsites;
+      },
+      fetchSettings() {
+        // 加载设置
+        try {
+          const response = fetch('./api/settings');
+          if (response.ok) {
+            const settings = response.json();
+            this.uploadPublic = settings.uploadPublic;
+            this.uploadLimit = settings.uploadLimit;
+            this.quickWebsites = settings.quickWebsites;
+          }
+        } catch (error) {
+          console.error('加载设置失败:', error);
         }
-      } catch (error) {
-        console.error('加载设置失败:', error);
-      }
-      this.loading = false;
+        this.loading = false;
+      },
     },
     mounted() {
       window.addEventListener('resize', this.calculatePageSize);
       this.updateWindowWidth();
+      this.fetchSettings();
       fetch("./api/manage/check", { method: 'GET', credentials: 'include' })
         .then(response => response.text())
         .then(result => result === "true" ? this.showLogoutButton = true : window.location.href = "./api/manage/login")
@@ -981,8 +982,6 @@
           this.switchFileType(this.fileType);
         })
         .catch(() => this.$message.error('同步数据时出错，请检查网络连接'));
-
-      this.fetchSettings();
     },
     beforeDestroy() {
       window.removeEventListener('resize', this.calculatePageSize);
