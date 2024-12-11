@@ -289,8 +289,8 @@
           count: 0
         }
       },
-      uploadPublic: JSON.parse(localStorage.getItem('uploadPublic') ?? 'true'),
-      uploadLimit: parseInt(localStorage.getItem('uploadLimit') ?? '20'),
+      uploadPublic: true,
+      uploadLimit: 20,
       uploadConfig: {
         maxSize: 20 * 1024 * 1024,  // 最大上传20MB
         maxConcurrent: 3
@@ -303,15 +303,16 @@
       sortOption: 'dateDesc',
       filterOption: 'all',
       fileType: 'image',
-      quickWebsites: JSON.parse(localStorage.getItem('quickWebsites') ?? [
-      { name: '原版后台', url: './admin.html', icon: 'fas fa-suitcase' },
-      { name: '瀑布流', url: './admin-waterfall.html', icon: 'fas fa-wind' },
-      { name: 'Movavi', url: 'https://www.movavi.com/zh/movavi-video-converter.html', icon: 'fas fa-file-video' },
-      { name: 'FreeConvert', url: 'https://www.freeconvert.com/zh/video-compressor', icon: 'fas fa-file' },
-      { name: 'YouCompress', url: 'https://www.youcompress.com/zh-cn/', icon: 'fas fa-file-zipper' },
-      { name: 'Cloudinary', url: 'https://console.cloudinary.com/', icon: 'fas fa-cloud' },
-    ]),
+      quickWebsites: [
+        { name: '原版后台', url: './admin.html', icon: 'fas fa-suitcase' },
+        { name: '瀑布流', url: './admin-waterfall.html', icon: 'fas fa-wind' },
+        { name: 'Movavi', url: 'https://www.movavi.com/zh/movavi-video-converter.html', icon: 'fas fa-file-video' },
+        { name: 'FreeConvert', url: 'https://www.freeconvert.com/zh/video-compressor', icon: 'fas fa-file' },
+        { name: 'YouCompress', url: 'https://www.youcompress.com/zh-cn/', icon: 'fas fa-file-zipper' },
+        { name: 'Cloudinary', url: 'https://console.cloudinary.com/', icon: 'fas fa-cloud' },
+      ],
       websiteText: '',
+      loading: true
     },
     computed: {
       filteredTableData() {
@@ -712,6 +713,7 @@
       // 编辑设置
       editSettings() {
         const h = this.$createElement;
+        // 初始化 websiteText
         this.websiteText = this.quickWebsites
           .map(site => `${site.name}|${site.url}|${site.icon}`)
           .join('\n');
@@ -813,9 +815,8 @@
             ])
           ]),
           customClass: 'settings-center-dialog',
-          beforeClose: (action, instance, done) => {
+          beforeClose: async (action, instance, done) => {
             if (action === 'confirm') {
-              // 验证并保存设置
               try {
                 // 验证快捷方式格式
                 if (this.websiteText.trim()) {
@@ -833,24 +834,20 @@
                     this.$message.error('快捷方式格式错误，请检查');
                     return;
                   }
-                }
 
-                // 保存所有设置
-                localStorage.setItem('uploadPublic', this.uploadPublic);
-                localStorage.setItem('uploadLimit', this.uploadLimit);
-
-                if (this.websiteText.trim()) {
-                  const newSites = this.websiteText.split('\n')
+                  // 更新 quickWebsites
+                  this.quickWebsites = this.websiteText.split('\n')
                     .filter(line => line.trim())
                     .map(line => {
                       const [name, url, icon = 'fas fa-link'] = line.split('|');
                       return { name, url, icon };
                     });
-                  this.quickWebsites = newSites;
-                  localStorage.setItem('quickWebsites', JSON.stringify(newSites));
+                } else {
+                  this.quickWebsites = [];
                 }
 
-                this.$message.success('设置已保存');
+                // 保存设置
+                await this.saveSettings();
                 done();
               } catch (error) {
                 this.$message.error('保存设置失败：' + error.message);
@@ -918,7 +915,40 @@
           })
           .catch(() => this.$message.error('修改文件名时出错，请检查网络连接'));
         }).catch(() => {});
+      },
+      async saveSettings() {
+        try {
+          const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              uploadPublic: this.uploadPublic,
+              uploadLimit: this.uploadLimit,
+              quickWebsites: this.quickWebsites
+            })
+          });
+
+          if (!response.ok) throw new Error('保存失败');
+          this.$message.success('设置已保存');
+        } catch (error) {
+          throw new Error('保存设置失败：' + error.message);
+        }
       }
+    },
+    async fetchSettings() {
+      // 加载设置
+      try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+          const settings = await response.json();
+          this.uploadPublic = settings.uploadPublic;
+          this.uploadLimit = settings.uploadLimit;
+          this.quickWebsites = settings.quickWebsites;
+        }
+      } catch (error) {
+        console.error('加载设置失败:', error);
+      }
+      this.loading = false;
     },
     mounted() {
       window.addEventListener('resize', this.calculatePageSize);
@@ -952,9 +982,7 @@
         })
         .catch(() => this.$message.error('同步数据时出错，请检查网络连接'));
 
-      if (localStorage.getItem('quickWebsites')) {
-        this.quickWebsites = JSON.parse(localStorage.getItem('quickWebsites'));
-      }
+      this.fetchSettings();
     },
     beforeDestroy() {
       window.removeEventListener('resize', this.calculatePageSize);

@@ -531,5 +531,6 @@ body {
 
   .el-textarea__inner {
     font-family: monospace;
+    height: 240px;
   }
 }
