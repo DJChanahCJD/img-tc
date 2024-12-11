@@ -306,10 +306,6 @@
       quickWebsites: [
         { name: '原版后台', url: './admin.html', icon: 'fas fa-suitcase' },
         { name: '瀑布流', url: './admin-waterfall.html', icon: 'fas fa-wind' },
-        { name: 'Movavi', url: 'https://www.movavi.com/zh/movavi-video-converter.html', icon: 'fas fa-file-video' },
-        { name: 'FreeConvert', url: 'https://www.freeconvert.com/zh/video-compressor', icon: 'fas fa-file' },
-        { name: 'YouCompress', url: 'https://www.youcompress.com/zh-cn/', icon: 'fas fa-file-zipper' },
-        { name: 'Cloudinary', url: 'https://console.cloudinary.com/', icon: 'fas fa-cloud' },
       ],
       websiteText: '',
       loading: true
@@ -710,79 +706,85 @@
       },
       // 处理网站点击
       handleWebsite(url) { window.open(url, '_blank'); },
-      // 编辑设置
+      // 编辑设置中心
       editSettings() {
-        // 创建临时数据
-        const tempSettings = {
-          uploadPublic: this.uploadPublic,
-          uploadLimit: this.uploadLimit,
-          quickWebsitesText: this.quickWebsites.map(site =>
-            `${site.name}|${site.url}|${site.icon}`
-          ).join('\n')
-        };
+        // 格式化当前设置为文本
+        const settingsText = [
+          this.uploadPublic,           // 第一行：是否允许公开上传
+          this.uploadLimit,             // 第二行：上传大小限制
+          ...this.quickWebsites.map(site => `${site.name}|${site.url}|${site.icon}`)  // 后续行：快捷方式
+        ].join('\n');
 
-        const h = this.$createElement;
-        this.$msgbox({
-          title: '设置中心',
-          customClass: 'settings-dialog',
-          message: h('div', [
-            // 禁用公开上传
-            h('div', { class: 'setting-item' }, [
-              h('span', '禁用公开上传'),
-              h('el-switch', {
-                props: { value: !tempSettings.uploadPublic },
-                on: { input: val => tempSettings.uploadPublic = !val }
-              })
-            ]),
-
-            // 上传限制
-            h('div', { class: 'setting-item' }, [
-              h('span', '上传大小限制 (MB)'),
-              h('el-input-number', {
-                props: {
-                  value: tempSettings.uploadLimit,
-                  min: 5,
-                  max: 1024,
-                  step: 5
-                },
-                on: { input: val => tempSettings.uploadLimit = val }
-              })
-            ]),
-
-            // 快捷方式设置
-            h('div', { class: 'setting-item quick-links' }, [
-              h('div', { class: 'setting-header' }, [
-                h('span', '快捷方式'),
-                h('el-button', {
-                  props: { type: 'text', size: 'mini' },
-                  on: { click: () => this.editQuickWebsites(tempSettings) }
-                }, '编辑快捷方式')
-              ]),
-              h('pre', { class: 'quick-links-preview' }, tempSettings.quickWebsitesText)
-            ])
-          ]),
-          beforeClose: (action, instance, done) => {
-            if (action === 'confirm') {
-              this.handleSettingsSave(tempSettings, done);
-            } else {
-              done();
-            }
-          },
-          showCancelButton: true,
-          confirmButtonText: '保存',
-          cancelButtonText: '取消'
-        });
-      },
-      editQuickWebsites(tempSettings) {
-        this.$prompt('快捷方式设置', {
+        this.$prompt('', '设置中心', {
           inputType: 'textarea',
-          inputValue: tempSettings.quickWebsitesText,
-          customClass: 'quick-links-editor',
-          inputPlaceholder: '名称|网址|图标类名\n每行一个快捷方式',
+          inputValue: settingsText,
           confirmButtonText: '确定',
-          cancelButtonText: '取消'
+          cancelButtonText: '取消',
+          dangerouslyUseHTMLString: true,
+          customClass: 'settings-edit-dialog',
+          message: `
+            <div class="settings-help">
+              <p>第1行：是否允许公开上传（true/false）</p>
+              <p>第2行：上传大小限制（MB，5-1024）</p>
+              <p>后续行：快捷方式，格式：名称|网址|图标类名</p>
+              <p>图标请在 <a href="https://fontawesome.com/v6/search?m=free" target="_blank">Font Awesome</a> 中选择</p>
+            </div>
+          `,
+          inputValidator: (value) => {
+            const lines = value.split('\n');
+            if (lines.length < 2) return '至少需要填写前两行设置';
+
+            // 验证第一行：禁用公开上传设置
+            if (!/^(true|false)$/i.test(lines[0].trim())) {
+              return '第1行必须是 true 或 false';
+            }
+
+            // 验证第二行：上传限制
+            const limit = parseInt(lines[1]);
+            if (isNaN(limit) || limit < 5 || limit > 1024) {
+              return '第2行必须是5-1024之间的数字';
+            }
+
+            // 验证快捷方式
+            if (lines.length > 12) return '快捷方式不能超过10个';
+
+            // 验证从第3行开始的快捷方式格式
+            for (let i = 2; i < lines.length; i++) {
+              const line = lines[i].trim();
+              if (!line) continue;
+
+              const [name, url, icon = 'fas fa-link'] = line.split('|');
+              if (!name || !url) {
+                return `第${i + 1}行：名称和网址不能为空`;
+              }
+              if (!(/^https?:\/\/.+/.test(url) || /^\.\/.*/.test(url))) {
+                return `第${i + 1}行：网址格式错误`;
+              }
+              if (!/^(fas?|fa-brands|fa-regular|fa-solid)\s+fa-[a-z0-9-]+$/.test(icon)) {
+                return `第${i + 1}行：图标类名格式错误`;
+              }
+            }
+            return true;
+          }
         }).then(({ value }) => {
-          tempSettings.quickWebsitesText = value;
+          const lines = value.split('\n');
+
+          // 更新设置
+          this.uploadPublic = lines[0].trim().toLowerCase() === 'true';
+          this.uploadLimit = parseInt(lines[1]);
+
+          // 更新快捷方式
+          const newSites = lines.slice(2)
+            .filter(line => line.trim())
+            .map(line => {
+              const [name, url, icon = 'fas fa-link'] = line.split('|');
+              return { name: name.trim(), url: url.trim(), icon: icon.trim() };
+            });
+
+          this.quickWebsites = newSites;
+          this.saveSettings();
+
+          this.$message.success('设置已保存');
         }).catch(() => {});
       },
       getFileIcon(filename) {
