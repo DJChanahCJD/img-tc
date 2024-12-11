@@ -919,9 +919,9 @@
       // 获取设置
       async fetchSettings() {
         try {
-          const response = await fetch("./api/settings", {
+          const response = await fetch("./api/manage/settings", {
             method: 'GET',
-            credentials: 'include'  // 添加凭证
+            credentials: 'include'
           });
 
           if (response.ok) {
@@ -950,7 +950,7 @@
       // 保存设置
       async saveSettings() {
         try {
-          const response = await fetch("./api/settings", {
+          const response = await fetch("./api/manage/settings", {
             method: 'POST',
             credentials: 'include',
             headers: {

@@ -15,7 +15,7 @@ export async function onRequestPost(context) {
         }
 
         const url = new URL(request.url);
-        const settings = await fetch(`${url.origin}/api/settings`);
+        const settings = await fetch(`${url.origin}/api/manage/settings`);
         const isAdmin = request.headers.get('Referer')?.includes(`${url.origin}/admin`);
 
         if (!settings.uploadPublic && !isAdmin) {

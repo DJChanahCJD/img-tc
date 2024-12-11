@@ -3,10 +3,17 @@ export async function onRequestGet(context) {
   const { env } = context;
 
   try {
-    const settings = await env.img_url.get('admin_settings', { type: 'json' }) || {
+    const settings = await env.imgtc_settings.get('settings', { type: 'json' }) || {
       uploadPublic: true,  // 默认允许公开上传
       uploadLimit: 20,     // 默认20MB
-      quickWebsites: []    // 默认空数组
+      quickWebsites: [     // 默认快捷方式
+        { name: '原版后台', url: './admin.html', icon: 'fas fa-suitcase' },
+        { name: '瀑布流', url: './admin-waterfall.html', icon: 'fas fa-wind' },
+        { name: 'Movavi', url: 'https://www.movavi.com/zh/movavi-video-converter.html', icon: 'fas fa-file-video' },
+        { name: 'FreeConvert', url: 'https://www.freeconvert.com/zh/video-compressor', icon: 'fas fa-file' },
+        { name: 'YouCompress', url: 'https://www.youcompress.com/zh-cn/', icon: 'fas fa-file-zipper' },
+        { name: 'Cloudinary', url: 'https://console.cloudinary.com/', icon: 'fas fa-cloud' }
+      ]
     };
 
     return new Response(JSON.stringify(settings), {
@@ -26,7 +33,7 @@ export async function onRequestPost(context) {
 
   try {
     const settings = await request.json();
-    await env.img_url.put('admin_settings', JSON.stringify(settings));
+    await env.imgtc_settings.put('settings', JSON.stringify(settings));
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' }
@@ -37,4 +44,4 @@ export async function onRequestPost(context) {
       headers: { 'Content-Type': 'application/json' }
     });
   }
-} 
+}
