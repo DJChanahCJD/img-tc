@@ -725,7 +725,7 @@
           message: `
             <div class="el-message-box__info">
               <i class="el-message-box__status el-icon-info"></i>
-              <div class="el-message-box__message">
+              <div class="el-message-box__message" style="font-size: 14px; color: #666;">
                 <p>第1行：是否允许公开上传（true/false）</p>
                 <p>第2行：上传大小限制（MB，5-1024）</p>
                 <p>后续行：快捷方式，格式：名称|网址|图标类名</p>
@@ -779,7 +779,6 @@
             });
 
           this.saveSettings();
-          this.$message.success('设置已保存');
         }).catch(() => {});
       },
       getFileIcon(filename) {
