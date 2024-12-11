@@ -754,58 +754,21 @@
           }
         };
 
-        // 格式化当前设置为文本
-        const formatSettingsToText = () => {
-          return [
-            this.uploadPublic,
-            this.accessPublic,
-            this.uploadLimit,
-            ...this.quickWebsites.map(site => `${site.name}|${site.url}|${site.icon}`)
-          ].join('\n');
-        };
-
         // 生成设置说明
-        const generateSettingsGuide = () => {
-          const guideContent = Object.entries(SETTINGS_CONFIG).map(([key, config], index) => {
-            if (config.type === 'array') {
-              return `<p>后续行：${config.label}，${config.description}（${config.errorMsg}）</p>`;
-            }
-            return `<p>第${index + 1}行：${config.label}（${config.description}）</p>`;
-          }).join('');
-
-          return `
-            <div class="settings-guide">
-              <div class="guide-header">
-                <span>设置说明</span>
-                <el-tooltip class="guide-tooltip" effect="light" placement="right">
-                  <div slot="content">
-                    <h4>详细说明</h4>
-                    ${Object.entries(SETTINGS_CONFIG).map(([key, config]) => `
-                      <div class="setting-item">
-                        <h5>${config.label}</h5>
-                        <p>${config.description}</p>
-                        ${config.type === 'boolean' ? `
-                          <ul>
-                            <li>true - 启用</li>
-                            <li>false - 禁用</li>
-                          </ul>
-                        ` : ''}
-                        ${config.type === 'number' ? `
-                          <p>有效范围：${config.validator.toString().match(/\d+/g).join('-')}</p>
-                        ` : ''}
-                      </div>
-                    `).join('')}
-                  </div>
-                  <i class="fas fa-question-circle"></i>
-                </el-tooltip>
-              </div>
-              <div class="guide-content">
-                ${guideContent}
-                <p>图标请在 <a href="https://fontawesome.com/v6/search?m=free" target="_blank">Font Awesome</a> 中选择</p>
-              </div>
+        const generateSettingsGuide = () => `
+          <div class="settings-guide">
+            <div class="guide-header">
+              <span>设置说明</span>
             </div>
-          `;
-        };
+            <div class="guide-content">
+              <p>第1行：允许公开上传（是否允许未登录用户上传文件）</p>
+              <p>第2行：允许公开访问（是否允许未登录用户查看文件）</p>
+              <p>第3行：上传大小限制（单个文件的最大上传大小，MB）</p>
+              <p>后续行：快捷方式配置（格式：名称|网址|图标类名）</p>
+              <p>图标请在 <a href="https://fontawesome.com/v6/search?m=free" target="_blank">Font Awesome</a> 中选择</p>
+            </div>
+          </div>
+        `;
 
         // 验证设置内容
         const validateSettings = (value) => {
