@@ -108,7 +108,16 @@ export async function onRequest(context) {
 
     // save metadata directly, no additional conditions are needed
     await env.img_url.put(params.id, "", { metadata });
-    return response;
+    const contentType = response.headers.get('content-type');
+
+    return new Response(response.body, {
+        headers: {
+            'Content-Type': contentType,
+            ...(!contentType.startsWith('image/') && {
+                'Content-Disposition': 'attachment'
+            })
+        }
+    });
 }
 
 async function getFilePath(env, file_id) {
