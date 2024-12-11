@@ -289,7 +289,8 @@
           count: 0
         }
       },
-      uploadPublic: false,
+      uploadPublic: JSON.parse(localStorage.getItem('uploadPublic') ?? 'true'),
+      uploadLimit: parseInt(localStorage.getItem('uploadLimit') ?? '20'),
       uploadConfig: {
         maxSize: 20 * 1024 * 1024,  // 最大上传20MB
         maxConcurrent: 3
@@ -302,14 +303,15 @@
       sortOption: 'dateDesc',
       filterOption: 'all',
       fileType: 'image',
-      quickWebsites: [
-        { name: '原版后台', url: './admin.html', icon: 'fas fa-suitcase' },
-        { name: '瀑布流', url: './admin-waterfall.html', icon: 'fas fa-wind' },
-        { name: 'Movavi', url: 'https://www.movavi.com/zh/movavi-video-converter.html', icon: 'fas fa-file-video' },
-        { name: 'FreeConvert', url: 'https://www.freeconvert.com/zh/video-compressor', icon: 'fas fa-file' },
-        { name: 'YouCompress', url: 'https://www.youcompress.com/zh-cn/', icon: 'fas fa-file-zipper' },
-        { name: 'Cloudinary', url: 'https://console.cloudinary.com/', icon: 'fas fa-cloud' },
-      ],
+      quickWebsites: JSON.parse(localStorage.getItem('quickWebsites') ?? [
+      { name: '原版后台', url: './admin.html', icon: 'fas fa-suitcase' },
+      { name: '瀑布流', url: './admin-waterfall.html', icon: 'fas fa-wind' },
+      { name: 'Movavi', url: 'https://www.movavi.com/zh/movavi-video-converter.html', icon: 'fas fa-file-video' },
+      { name: 'FreeConvert', url: 'https://www.freeconvert.com/zh/video-compressor', icon: 'fas fa-file' },
+      { name: 'YouCompress', url: 'https://www.youcompress.com/zh-cn/', icon: 'fas fa-file-zipper' },
+      { name: 'Cloudinary', url: 'https://console.cloudinary.com/', icon: 'fas fa-cloud' },
+    ]),
+      websiteText: '',
     },
     computed: {
       filteredTableData() {
@@ -710,18 +712,21 @@
       // 编辑设置
       editSettings() {
         const h = this.$createElement;
+        this.websiteText = this.quickWebsites
+          .map(site => `${site.name}|${site.url}|${site.icon}`)
+          .join('\n');
 
         this.$msgbox({
           title: '设置中心',
           message: h('div', { class: 'settings-dialog' }, [
-            // 1. 公开上传设置
+            // 1. 禁用公开上传设置
             h('div', { class: 'setting-item' }, [
               h('div', { class: 'setting-label' }, [
-                '允许公开上传',
+                '禁用公开上传',
                 h('el-tooltip', {
                   props: {
                     effect: 'dark',
-                    content: '开启后允许在非管理页面上传文件',
+                    content: '开启后只允许在管理页面上传文件',
                     placement: 'right'
                   }
                 }, [
@@ -730,12 +735,12 @@
               ]),
               h('el-switch', {
                 props: {
-                  value: this.uploadPublic,
-                  activeColor: '#13ce66',
-                  inactiveColor: '#ff4949'
+                  value: !this.uploadPublic,
+                  activeColor: '#ff4949',
+                  inactiveColor: '#13ce66'
                 },
                 on: {
-                  change: val => this.uploadPublic = val
+                  change: val => this.uploadPublic = !val
                 }
               })
             ]),
@@ -756,7 +761,7 @@
               ]),
               h('el-input-number', {
                 props: {
-                  value: this.uploadLimit,
+                  modelValue: this.uploadLimit,
                   min: 5,
                   max: 1024,
                   step: 5,
@@ -764,7 +769,7 @@
                   controlsPosition: 'right'
                 },
                 on: {
-                  change: val => this.uploadLimit = val
+                  'update:modelValue': val => this.uploadLimit = val
                 }
               })
             ]),
@@ -787,13 +792,11 @@
                 props: {
                   type: 'textarea',
                   rows: 8,
-                  value: this.quickWebsites
-                    .map(site => `${site.name}|${site.url}|${site.icon}`)
-                    .join('\n'),
+                  modelValue: this.websiteText,
                   placeholder: '示例：\nGoogle|https://google.com|fab fa-google'
                 },
                 on: {
-                  input: val => this.websiteText = val
+                  'update:modelValue': val => this.websiteText = val
                 }
               }),
               h('div', { class: 'setting-tips' }, [
@@ -815,7 +818,7 @@
               // 验证并保存设置
               try {
                 // 验证快捷方式格式
-                if (this.websiteText) {
+                if (this.websiteText.trim()) {
                   const isValid = this.websiteText.split('\n')
                     .filter(line => line.trim())
                     .every(line => {
@@ -836,14 +839,16 @@
                 localStorage.setItem('uploadPublic', this.uploadPublic);
                 localStorage.setItem('uploadLimit', this.uploadLimit);
 
-                const newSites = this.websiteText.split('\n')
-                  .filter(line => line.trim())
-                  .map(line => {
-                    const [name, url, icon = 'fas fa-link'] = line.split('|');
-                    return { name, url, icon };
-                  });
-                this.quickWebsites = newSites;
-                localStorage.setItem('quickWebsites', JSON.stringify(newSites));
+                if (this.websiteText.trim()) {
+                  const newSites = this.websiteText.split('\n')
+                    .filter(line => line.trim())
+                    .map(line => {
+                      const [name, url, icon = 'fas fa-link'] = line.split('|');
+                      return { name, url, icon };
+                    });
+                  this.quickWebsites = newSites;
+                  localStorage.setItem('quickWebsites', JSON.stringify(newSites));
+                }
 
                 this.$message.success('设置已保存');
                 done();
