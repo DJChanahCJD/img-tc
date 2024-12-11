@@ -103,7 +103,19 @@ export async function onRequest(context) {
 
     // save metadata directly, no additional conditions are needed
     await env.img_url.put(params.id, "", { metadata });
-    return response;
+
+    const contentType = response.headers.get('content-type');
+
+    return new Response(response.body, {
+        headers: {
+            'Content-Type': contentType,
+            // 对于图片等可预览文件，不设置 Content-Disposition
+            // 对于文档等文件，可以设置为 attachment
+            ...(!contentType.startsWith('image/') && {
+                'Content-Disposition': 'attachment'
+            })
+        }
+    });
 }
 
 async function getFilePath(env, file_id) {
