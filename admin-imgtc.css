@@ -465,3 +465,32 @@ body {
     height: 240px;
   }
 }
+
+.quick-links-editor .el-textarea__inner {
+  min-height: 200px;
+  font-family: monospace;
+  white-space: pre;
+  tab-size: 2;
+}
+
+.quick-links-preview {
+  margin: 10px 0;
+  padding: 10px;
+  background: #f5f7fa;
+  border-radius: 4px;
+  font-family: monospace;
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.settings-dialog .setting-item {
+  margin-bottom: 15px;
+}
+
+.settings-dialog .setting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
