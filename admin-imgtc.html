@@ -955,6 +955,23 @@
           this.$message.error('保存设置失败：' + error.message);
           throw error;
         }
+      },
+
+      formatSettingsToText() {
+        // 获取基本设置
+        const basicSettings = [
+          this.uploadPublic.toString(),
+          this.accessPublic.toString(),
+          this.uploadLimit.toString(),
+        ];
+
+        // 格式化快捷方式
+        const quickWebsitesText = this.quickWebsites.map(site =>
+          `${site.name}|${site.url}|${site.icon}`
+        );
+
+        // 合并所有设置并返回
+        return [...basicSettings, ...quickWebsitesText].join('\n');
       }
     },
     mounted() {
