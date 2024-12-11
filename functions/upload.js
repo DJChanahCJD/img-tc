@@ -14,13 +14,14 @@ export async function onRequestPost(context) {
             throw new Error('No file uploaded');
         }
 
+        const settings = await fetch('/api/settings');
         const url = new URL(request.url);
         const isAdmin = request.headers.get('Referer')?.includes(`${url.origin}/admin`);
-        const uploadPublic = localStorage.getItem('uploadPublic') || false;
-        if (!uploadPublic && !isAdmin) {
+
+        if (!settings.uploadPublic && !isAdmin) {
             throw new Error('Upload is not allowed');
         }
-        const uploadLimit = localStorage.getItem('uploadLimit') || 20;
+        const uploadLimit = settings.uploadLimit || 20;
         // 检查文件大小是否超过总上传限制
         if (uploadFile.size > uploadLimit * 1024 * 1024) {
             throw new Error(`File size exceeds maximum limit of ${uploadLimit}MB`);
