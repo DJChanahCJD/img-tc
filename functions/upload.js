@@ -14,7 +14,7 @@ export async function onRequestPost(context) {
             throw new Error('No file uploaded');
         }
 
-        const settings = await fetch('/api/settings');
+        const settings = await fetch('./api/settings');
         const url = new URL(request.url);
         const isAdmin = request.headers.get('Referer')?.includes(`${url.origin}/admin`);
 

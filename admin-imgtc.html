@@ -918,7 +918,7 @@
       },
       async saveSettings() {
         try {
-          const response = await fetch('/api/settings', {
+          const response = await fetch('./api/settings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -938,7 +938,7 @@
     async fetchSettings() {
       // 加载设置
       try {
-        const response = await fetch('/api/settings');
+        const response = await fetch('./api/settings');
         if (response.ok) {
           const settings = await response.json();
           this.uploadPublic = settings.uploadPublic;
