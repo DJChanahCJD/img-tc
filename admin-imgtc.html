@@ -61,6 +61,7 @@
                 <el-dropdown-menu slot="dropdown">
                   <el-dropdown-item command="copy" :class="{ disabled: selectedFiles.length === 0 }"><i class="fas fa-link"></i> 批量复制</el-dropdown-item>
                   <el-dropdown-item command="delete" :class="{ disabled: selectedFiles.length === 0 }"><i class="fas fa-trash-alt"></i> 批量删除</el-dropdown-item>
+                  <el-dropdown-item command="download" :class="{ disabled: selectedFiles.length === 0 }"><i class="fas fa-download"></i> 批量下载</el-dropdown-item>
                   <el-dropdown-item command="block" :class="{ disabled: selectedFiles.length === 0 }"><i class="fas fa-lock"></i> 加入黑名单</el-dropdown-item>
                   <el-dropdown-item command="unblock" :class="{ disabled: selectedFiles.length === 0 }"><i class="fas fa-unlock"></i> 加入白名单</el-dropdown-item>
                 </el-dropdown-menu>
@@ -607,6 +608,18 @@
         (navigator.clipboard?.writeText(links) || this.copyToClipboardFallback(links))
           .then(() => this.$message.success('批量复制链接成功~'));
       },
+      handleBatchDownload() {  // 批量下载
+        this.selectedFiles.forEach(file => {
+          const link = document.createElement('a');
+          link.href = `/file/${file.name}`;
+          link.download = file.metadata.fileName || file.name;
+          link.target = '_blank';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        });
+        this.$message.success(`正在下载 ${this.selectedFiles.length} 个文件`);
+      },
       handleBatchBlockOrUnblock(type) {  // 批量加入黑/白名单
         if (type !== 'Block' && type !== 'White') { this.$message.error('无效的操作类型'); return; }
         const typeToName = { Block: '黑名单', White: '白名单' };
@@ -638,6 +651,7 @@
         switch (command) {
           case 'copy': this.handleBatchCopy(); break;
           case 'delete': this.handleBatchDelete(); break;
+          case 'download': this.handleBatchDownload(); break;
           case 'block': this.handleBatchBlockOrUnblock('Block'); break;
           case 'unblock': this.handleBatchBlockOrUnblock('White'); break;
         }
