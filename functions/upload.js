@@ -24,7 +24,8 @@ export async function onRequestPost(context) {
         // 根据文件类型选择合适的上传方式
         let apiEndpoint;
         if (uploadFile.type.startsWith('image/')) {
-            if (!validateImage(uploadFile)) {
+            const isValidImage = await validateImage(uploadFile);
+            if (!isValidImage) {
                 telegramFormData.append("document", uploadFile);
                 apiEndpoint = 'sendDocument';
             } else {
@@ -117,12 +118,33 @@ function getFileId(response) {
     return null;
 }
 
-function validateImage(image) {
-    if (image.size > 10 * 1024 * 1024 ||
-        image.width + image.height > 10000 ||
-        Math.max(image.width / image.height, image.height / image.width) > 20
-    ) {
+async function validateImage(file) {
+    // 首先检查文件大小
+    if (file.size > 10 * 1024 * 1024) {
         return false;
     }
-    return true;
+
+    // 创建一个 Promise 来处理图片加载
+    return new Promise((resolve) => {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+
+        img.onload = function() {
+            URL.revokeObjectURL(objectUrl); // 清理 URL
+
+            // 检查尺寸限制
+            if (img.width + img.height > 10000 ||
+                Math.max(img.width / img.height, img.height / img.width) > 20) {
+                resolve(false);
+            }
+            resolve(true);
+        };
+
+        img.onerror = function() {
+            URL.revokeObjectURL(objectUrl);
+            resolve(false);
+        };
+
+        img.src = objectUrl;
+    });
 }
