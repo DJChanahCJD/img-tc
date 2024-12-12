@@ -609,7 +609,7 @@
           .then(() => this.$message.success('批量复制链接成功~'));
       },
       handleBatchDownload() {  // 批量下载
-        this.$message.info(`正在下载 ${this.selectedFiles.length} 个文件`);
+        this.$message.info(`正在下载 ${this.selectedFiles.length} 个文件`, { duration: 1000 });
         this.selectedFiles.forEach((file, index) => {
           setTimeout(() => {
             const link = document.createElement('a');
