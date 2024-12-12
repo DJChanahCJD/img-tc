@@ -1,59 +1,5 @@
 import { errorHandling, telemetryData } from "./utils/middleware";
 
-async function sendToTelegram(formData, apiEndpoint, env, retryCount = 0) {
-    const MAX_RETRIES = 2;
-    const apiUrl = `https://api.telegram.org/bot${env.TG_Bot_Token}/${apiEndpoint}`;
-
-    try {
-        const response = await fetch(apiUrl, {
-            method: "POST",
-            body: formData,
-        });
-
-        const responseData = await response.json();
-
-        // 如果请求成功
-        if (response.ok) {
-            return { success: true, data: responseData };
-        }
-
-        // 如果是图片相关错误，尝试作为文档重新发送
-        if (retryCount < MAX_RETRIES &&
-            apiEndpoint === 'sendPhoto'){
-
-            console.log('Retrying as document...');
-            const newFormData = new FormData();
-            const originalFile = formData.get('photo');
-
-            // 复制原始的 chat_id
-            newFormData.append('chat_id', formData.get('chat_id'));
-            // 将文件作为文档重新添加
-            newFormData.append('document', originalFile);
-
-            return await sendToTelegram(newFormData, 'sendDocument', env, retryCount + 1);
-        }
-
-        return {
-            success: false,
-            error: responseData.description || 'Upload to Telegram failed'
-        };
-    } catch (error) {
-        console.error('Network error:', error);
-
-        // 如果是网络错误且未超过重试次数，则重试
-        if (retryCount < MAX_RETRIES) {
-            console.log(`Retrying... Attempt ${retryCount + 1} of ${MAX_RETRIES}`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // 指数退避
-            return await sendToTelegram(formData, apiEndpoint, env, retryCount + 1);
-        }
-
-        return {
-            success: false,
-            error: 'Network error occurred'
-        };
-    }
-}
-
 export async function onRequestPost(context) {
     const { request, env } = context;
 
@@ -150,4 +96,39 @@ function getFileId(response) {
     if (result.audio) return result.audio.file_id;
 
     return null;
+}
+
+async function sendToTelegram(formData, apiEndpoint, env, retryCount = 0) {
+    const MAX_RETRIES = 2;
+    const apiUrl = `https://api.telegram.org/bot${env.TG_Bot_Token}/${apiEndpoint}`;
+
+    try {
+        const response = await fetch(apiUrl, { method: "POST", body: formData });
+        const responseData = await response.json();
+
+        if (response.ok) {
+            return { success: true, data: responseData };
+        }
+
+        // 图片上传失败时转为文档方式重试
+        if (retryCount < MAX_RETRIES && apiEndpoint === 'sendPhoto') {
+            console.log('Retrying image as document...');
+            const newFormData = new FormData();
+            newFormData.append('chat_id', formData.get('chat_id'));
+            newFormData.append('document', formData.get('photo'));
+            return await sendToTelegram(newFormData, 'sendDocument', env, retryCount + 1);
+        }
+
+        return {
+            success: false,
+            error: responseData.description || 'Upload to Telegram failed'
+        };
+    } catch (error) {
+        console.error('Network error:', error);
+        if (retryCount < MAX_RETRIES) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+            return await sendToTelegram(formData, apiEndpoint, env, retryCount + 1);
+        }
+        return { success: false, error: 'Network error occurred' };
+    }
 }
