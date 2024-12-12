@@ -1,5 +1,59 @@
 import { errorHandling, telemetryData } from "./utils/middleware";
 
+async function sendToTelegram(formData, apiEndpoint, env, retryCount = 0) {
+    const MAX_RETRIES = 2;
+    const apiUrl = `https://api.telegram.org/bot${env.TG_Bot_Token}/${apiEndpoint}`;
+
+    try {
+        const response = await fetch(apiUrl, {
+            method: "POST",
+            body: formData,
+        });
+
+        const responseData = await response.json();
+
+        // 如果请求成功
+        if (response.ok) {
+            return { success: true, data: responseData };
+        }
+
+        // 如果是图片相关错误，尝试作为文档重新发送
+        if (retryCount < MAX_RETRIES &&
+            apiEndpoint === 'sendPhoto'){
+
+            console.log('Retrying as document...');
+            const newFormData = new FormData();
+            const originalFile = formData.get('photo');
+
+            // 复制原始的 chat_id
+            newFormData.append('chat_id', formData.get('chat_id'));
+            // 将文件作为文档重新添加
+            newFormData.append('document', originalFile);
+
+            return await sendToTelegram(newFormData, 'sendDocument', env, retryCount + 1);
+        }
+
+        return {
+            success: false,
+            error: responseData.description || 'Upload to Telegram failed'
+        };
+    } catch (error) {
+        console.error('Network error:', error);
+
+        // 如果是网络错误且未超过重试次数，则重试
+        if (retryCount < MAX_RETRIES) {
+            console.log(`Retrying... Attempt ${retryCount + 1} of ${MAX_RETRIES}`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // 指数退避
+            return await sendToTelegram(formData, apiEndpoint, env, retryCount + 1);
+        }
+
+        return {
+            success: false,
+            error: 'Network error occurred'
+        };
+    }
+}
+
 export async function onRequestPost(context) {
     const { request, env } = context;
 
@@ -24,14 +78,8 @@ export async function onRequestPost(context) {
         // 根据文件类型选择合适的上传方式
         let apiEndpoint;
         if (uploadFile.type.startsWith('image/')) {
-            const isValidImage = await validateImage(uploadFile);
-            if (!isValidImage) {
-                telegramFormData.append("document", uploadFile);
-                apiEndpoint = 'sendDocument';
-            } else {
-                telegramFormData.append("photo", uploadFile);
-                apiEndpoint = 'sendPhoto';
-            }
+            telegramFormData.append("photo", uploadFile);
+            apiEndpoint = 'sendPhoto';
         } else if (uploadFile.type.startsWith('audio/')) {
             telegramFormData.append("audio", uploadFile);
             apiEndpoint = 'sendAudio';
@@ -43,27 +91,13 @@ export async function onRequestPost(context) {
             apiEndpoint = 'sendDocument';
         }
 
-        const apiUrl = `https://api.telegram.org/bot${env.TG_Bot_Token}/${apiEndpoint}`;
-        console.log('Sending request to:', apiUrl);
+        const result = await sendToTelegram(telegramFormData, apiEndpoint, env);
 
-        const response = await fetch(
-            apiUrl,
-            {
-                method: "POST",
-                body: telegramFormData
-            }
-        );
-
-        console.log('Response status:', response.status);
-
-        const responseData = await response.json();
-
-        if (!response.ok) {
-            console.error('Error response from Telegram API:', responseData);
-            throw new Error(responseData.description || 'Upload to Telegram failed');
+        if (!result.success) {
+            throw new Error(result.error);
         }
 
-        const fileId = getFileId(responseData);
+        const fileId = getFileId(result.data);
 
         if (!fileId) {
             throw new Error('Failed to get file ID');
@@ -116,35 +150,4 @@ function getFileId(response) {
     if (result.audio) return result.audio.file_id;
 
     return null;
-}
-
-async function validateImage(file) {
-    // 首先检查文件大小
-    if (file.size > 10 * 1024 * 1024) {
-        return false;
-    }
-
-    // 创建一个 Promise 来处理图片加载
-    return new Promise((resolve) => {
-        const img = new Image();
-        const objectUrl = URL.createObjectURL(file);
-
-        img.onload = function() {
-            URL.revokeObjectURL(objectUrl); // 清理 URL
-
-            // 检查尺寸限制
-            if (img.width + img.height > 10000 ||
-                Math.max(img.width / img.height, img.height / img.width) > 20) {
-                resolve(false);
-            }
-            resolve(true);
-        };
-
-        img.onerror = function() {
-            URL.revokeObjectURL(objectUrl);
-            resolve(false);
-        };
-
-        img.src = objectUrl;
-    });
 }
