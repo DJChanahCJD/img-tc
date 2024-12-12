@@ -23,16 +23,24 @@ export async function onRequestPost(context) {
 
         // 根据文件类型选择合适的上传方式
         let apiEndpoint;
-        // if (uploadFile.type.startsWith('image/')) {
-        //     telegramFormData.append("photo", uploadFile);
-        //     apiEndpoint = 'sendPhoto';
-        // } else if (uploadFile.type.startsWith('audio/')) {
-        //     telegramFormData.append("audio", uploadFile);
-        //     apiEndpoint = 'sendAudio';
-        // } else {
+        if (uploadFile.type.startsWith('image/')) {
+            if (!validateImage(uploadFile)) {
+                telegramFormData.append("document", uploadFile);
+                apiEndpoint = 'sendDocument';
+            } else {
+                telegramFormData.append("photo", uploadFile);
+                apiEndpoint = 'sendPhoto';
+            }
+        } else if (uploadFile.type.startsWith('audio/')) {
+            telegramFormData.append("audio", uploadFile);
+            apiEndpoint = 'sendAudio';
+        } else if (uploadFile.type.startsWith('video/')) {
+            telegramFormData.append("video", uploadFile);
+            apiEndpoint = 'sendVideo';
+        } else {
             telegramFormData.append("document", uploadFile);
             apiEndpoint = 'sendDocument';
-        // }
+        }
 
         const apiUrl = `https://api.telegram.org/bot${env.TG_Bot_Token}/${apiEndpoint}`;
         console.log('Sending request to:', apiUrl);
@@ -97,14 +105,24 @@ function getFileId(response) {
     if (!response.ok || !response.result) return null;
 
     const result = response.result;
-    // if (result.photo) {
-    //     return result.photo.reduce((prev, current) =>
-    //         (prev.file_size > current.file_size) ? prev : current
-    //     ).file_id;
-    // }
+    if (result.photo) {
+        return result.photo.reduce((prev, current) =>
+            (prev.file_size > current.file_size) ? prev : current
+        ).file_id;
+    }
     if (result.document) return result.document.file_id;
-    // if (result.video) return result.video.file_id;
-    // if (result.audio) return result.audio.file_id;
+    if (result.video) return result.video.file_id;
+    if (result.audio) return result.audio.file_id;
 
     return null;
+}
+
+function validateImage(image) {
+    if (image.size > 10 * 1024 * 1024 ||
+        image.width + image.height > 10000 ||
+        Math.max(image.width / image.height, image.height / image.width) > 20
+    ) {
+        return false;
+    }
+    return true;
 }
