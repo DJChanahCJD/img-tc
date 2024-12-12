@@ -609,14 +609,8 @@
           .then(() => this.$message.success('批量复制链接成功~'));
       },
       handleBatchDownload() {  // 批量下载
-        const loading = this.$loading({
-          lock: true,
-          text: `下载中...`,
-          spinner: 'el-icon-loading',
-          background: 'rgba(255, 255, 255, 0.7)'
-        });
+        const loading = this.$message({ message: '下载中...', duration: 0 });
 
-        // 使用 Promise.all 和 setTimeout 来分批下载,避免浏览器限制
         const downloadFile = (file, index) => {
           return new Promise(resolve => {
             setTimeout(() => {
@@ -637,7 +631,7 @@
         Promise.all(downloads)
           .then(() => {
             loading.close();
-            this.$message.success(`已开始下载 ${this.selectedFiles.length} 个文件`);
+            this.$message.success(`成功下载 ${this.selectedFiles.length} 个文件`);
           })
           .catch(err => {
             loading.close();
