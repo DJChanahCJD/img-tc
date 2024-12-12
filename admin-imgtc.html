@@ -609,6 +609,7 @@
           .then(() => this.$message.success('批量复制链接成功~'));
       },
       handleBatchDownload() {  // 批量下载
+        this.$message.info(`正在下载 ${this.selectedFiles.length} 个文件`);
         this.selectedFiles.forEach((file, index) => {
           setTimeout(() => {
             const link = document.createElement('a');
@@ -617,7 +618,6 @@
             link.click();
           }, index * 800);
         });
-        this.$message.info(`正在下载 ${this.selectedFiles.length} 个文件`);
       },
       handleBatchBlockOrUnblock(type) {  // 批量加入黑/白名单
         if (type !== 'Block' && type !== 'White') { this.$message.error('无效的操作类型'); return; }
