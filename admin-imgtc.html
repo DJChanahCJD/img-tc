@@ -609,35 +609,15 @@
           .then(() => this.$message.success('批量复制链接成功~'));
       },
       handleBatchDownload() {  // 批量下载
-        const loading = this.$message({ message: '下载中...', duration: 0 });
-
-        const downloadFile = (file, index) => {
-          return new Promise(resolve => {
-            setTimeout(() => {
-              const link = document.createElement('a');
-              link.href = `/file/${file.name}`;
-              link.download = file.metadata.fileName || file.name;
-              link.target = '_blank';
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-              resolve();
-            }, index * 800); // 每个文件间隔 800ms
-          });
-        };
-
-        const downloads = this.selectedFiles.map((file, index) => downloadFile(file, index));
-
-        Promise.all(downloads)
-          .then(() => {
-            loading.close();
-            this.$message.success(`成功下载 ${this.selectedFiles.length} 个文件`);
-          })
-          .catch(err => {
-            loading.close();
-            this.$message.error('下载过程中出现错误');
-            console.error('下载错误:', err);
-          });
+        this.selectedFiles.forEach((file, index) => {
+          setTimeout(() => {
+            const link = document.createElement('a');
+            link.href = `/file/${file.name}`;
+            link.download = file.metadata.fileName || file.name;
+            link.click();
+          }, index * 800);
+        });
+        this.$message.info(`正在下载 ${this.selectedFiles.length} 个文件`);
       },
       handleBatchBlockOrUnblock(type) {  // 批量加入黑/白名单
         if (type !== 'Block' && type !== 'White') { this.$message.error('无效的操作类型'); return; }
