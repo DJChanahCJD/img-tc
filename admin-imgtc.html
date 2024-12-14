@@ -688,15 +688,16 @@
         }
       },
       editUploadSettings() {
+        const uploadListType = localStorage.getItem('uploadListType') || this.uploadConfig.uploadListType;
         this.$prompt('', '上传设置', {
           inputType: 'textarea',
-          inputValue: {uploadListType: this.uploadConfig.uploadListType,},
+          inputValue: uploadListType,
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           message: `
             <div>
               上传设置格式：<br>
-              uploadListType: "None/Block/White", // 上传文件类型<br>
+              uploadListType: "None/Block/White",
             </div>
           `,
           inputValidator: (value) => {
