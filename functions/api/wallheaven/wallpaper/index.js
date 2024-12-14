@@ -42,27 +42,10 @@ export async function onRequest(context) {
 
       const data = await response.json();
 
-      // 处理返回数据
-      const wallpapers = data.data.slice(0, count).map(wp => ({
-        id: wp.id,
-        url: wp.path,
-        preview: wp.thumbs.large,
-        isWallpaper: true,
-        metadata: {
-          fileName: `wallhaven-${wp.id}.${wp.file_type.split('/')[1]}`,
-          fileSize: wp.file_size,
-          resolution: wp.resolution,
-          source: wp.url,
-          category: wp.category,
-          views: wp.views,
-          favorites: wp.favorites,
-        }
-      }));
-
       return new Response(JSON.stringify({
         status: true,
         message: "获取成功",
-        data: wallpapers,
+        data: data,
       }), {
         headers: {
           'Content-Type': 'application/json',

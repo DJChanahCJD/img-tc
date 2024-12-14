@@ -1020,7 +1020,21 @@
             throw new Error(result.message);
           }
 
-          this.tableData.unshift(...result.data);
+          const wallpapers = result.data.map(wp => ({
+            name: wp.id,
+            url: wp.path,
+            preview: wp.thumbs.large,
+            isWallpaper: true,
+            selected: false,
+            metadata: {
+              TimeStamp: Date.now(),
+              fileName: `wallhaven-${wp.id}.${wp.file_type.split('/')[1]}`,
+              fileSize: wp.file_size,
+            }
+          }));
+
+          this.tableData.unshift(...wallpapers);
+          this.$message.success('哇噻！好手气~✨');
         } catch (error) {
           this.$message.error('获取壁纸失败：' + error.message);
         } finally {
