@@ -13,24 +13,31 @@ export async function onRequest(context) {
       defaultParams: {
         categories: '111',
         purity: '111',
-        sorting: 'toplist',
-        topRange: '1d',
-        atleast: '1920x1080',
       }
     };
-
+    const randomSorting = ['favorites', 'toplist', 'views'];
+    const randomTopRange = ['1d', '3d', '1w', '1M', '3M', '6M', '1y'];
     try {
       // 获取查询参数
       const url = new URL(request.url);
-      const page = url.searchParams.get('page') || 1;
-      const seed = url.searchParams.get('seed') || Math.random().toString(36).substring(7);
+      const sorting = url.searchParams.get('sorting') || randomSorting[Math.floor(Math.random() * randomSorting.length)];
+      const page = url.searchParams.get('page') || Math.floor(Math.random() * 100) + 1;
 
-      // 构建API请求
       const params = new URLSearchParams({
         ...config.defaultParams,
         page: page,
-        seed: seed,
+        sorting: sorting,
       });
+      switch (sorting) {
+        case 'toplist':
+            const randomIndex = Math.floor(Math.random() * randomTopRange.length);
+            const topRange = randomTopRange[randomIndex];
+            params.set('topRange', topRange);
+            params.set('page', randomIndex < 3 ? page : Math.floor(Math.random() * 20) + 1);
+            break;
+        default:
+          break;
+      }
       if (config.apiKey) {
         params.set('apikey', config.apiKey);
       }
