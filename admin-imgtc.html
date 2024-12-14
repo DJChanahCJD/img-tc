@@ -1047,13 +1047,13 @@
       async handleCopyWallpaper(index, item) {
         const url = item.url;
         (navigator.clipboard?.writeText(url) || this.copyToClipboardFallback(url))
-        .then(() => this.$message.success('复制成功'))
+        .then(() => this.$message.success('复制成功\n' + JSON.stringify(item)))
         .catch(() => this.$message.error('复制失败'));
       },
         // 上传选中的壁纸
       async handleUploadWallpaper(index, item) {
         if (!item.isWallpaper??false) {
-          this.$message.error('无法上传非壁纸文件');
+          this.$message.error('无法上传非壁纸文件\n' + JSON.stringify(item));
           return;
         }
         const loading = this.$message({
@@ -1077,7 +1077,7 @@
           });
 
           if (!uploadRes.ok) {
-            this.$message.error('上传失败');
+            this.$message.error('上传失败\n' + JSON.stringify(item));
           }
 
           const data = await uploadRes.json();
