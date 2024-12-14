@@ -48,7 +48,7 @@ export async function onRequest(context) {
 
       return new Response(JSON.stringify({
         status: true,
-        message: "获取成功" + config.apiKey,
+        message: "获取成功\n" + `${config.baseUrl}/search?${params}`,
         data: data.data,
       }), {
         headers: {

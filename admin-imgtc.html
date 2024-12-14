@@ -503,7 +503,7 @@
                 this.tableData.unshift({
                   name: src.replace(/^\/file\//, ''),
                   selected: false,
-                  metadata: { TimeStamp: Date.now(), fileSize: file.size }
+                  metadata: { TimeStamp: Date.now(), fileSize: file.size, ListType: this.uploadConfig.uploadListType }
                 });
                 successCount++;
               }
@@ -958,7 +958,8 @@
             selected: false,
             metadata: {
               ...item.metadata,
-              TimeStamp: Date.now()
+              TimeStamp: Date.now(),
+              ListType: this.uploadConfig.uploadListType,
             }
           });
           this.$message.success('上传成功');
