@@ -47,6 +47,7 @@ export async function onRequest(context) {
         id: wp.id,
         url: wp.path,
         preview: wp.thumbs.large,
+        isWallpaper: true,
         metadata: {
           fileName: `wallhaven-${wp.id}.${wp.file_type.split('/')[1]}`,
           fileSize: wp.file_size,
