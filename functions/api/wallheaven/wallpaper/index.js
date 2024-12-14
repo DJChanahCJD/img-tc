@@ -28,15 +28,11 @@ export async function onRequest(context) {
         page: page,
         sorting: sorting,
       });
-      switch (sorting) {
-        case 'toplist':
-            const randomIndex = Math.floor(Math.random() * randomTopRange.length);
-            const topRange = randomTopRange[randomIndex];
-            params.set('topRange', topRange);
-            params.set('page', randomIndex < 3 ? page : Math.floor(Math.random() * 20) + 1);
-            break;
-        default:
-          break;
+      if (sorting === 'toplist') {
+        const randomIndex = Math.floor(Math.random() * randomTopRange.length);
+        const topRange = randomTopRange[randomIndex];
+        params.set('topRange', topRange);
+        params.set('page', randomIndex < 3 ? page : Math.floor(Math.random() * 20) + 1);
       }
       if (config.apiKey) {
         params.set('apikey', config.apiKey);
