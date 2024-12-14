@@ -445,3 +445,62 @@ body {
     height: 240px;
   }
 }
+
+.wallpaper-section {
+  margin: 20px 0;
+  padding: 15px;
+  background: rgba(0,0,0,0.05);
+  border-radius: 8px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.wallpaper-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 15px;
+}
+
+.wallpaper-card {
+  position: relative;
+  transition: all 0.3s;
+}
+
+.wallpaper-card.uploading {
+  opacity: 0.7;
+}
+
+.wallpaper-card.success {
+  border-color: #67C23A;
+}
+
+.wallpaper-card.error {
+  border-color: #F56C6C;
+}
+
+.wallpaper-info {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px;
+  font-size: 12px;
+  color: #909399;
+}
+
+.wallpaper-status {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.image-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 150px;
+  background: #f5f7fa;
+}
