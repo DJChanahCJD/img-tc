@@ -880,7 +880,7 @@
 
         this.wallpaperLoading = true;
         try {
-          const response = await fetch(`./api/wallheaven/wallpaper?page=${this.wallpaperPage}`);
+          const response = await fetch(`./api/wallheaven/wallpaper`);
           const result = await response.json();
 
           if (!result.status) {
