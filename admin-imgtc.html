@@ -1021,7 +1021,7 @@
           }
 
           const wallpapers = result.data.map(wp => ({
-            name: wp.id,
+            name: wp.id + ".jpg",
             selected: false,
             metadata: {
               TimeStamp: Date.now(),
@@ -1034,8 +1034,8 @@
           }));
 
           this.tableData.unshift(...wallpapers);
-          console.log(wallpapers);
-          console.log(this.tableData);
+          console.log("wallpapers",wallpapers);
+          console.log("this.tableData",this.tableData);
           this.$message.success('哇噻！好手气~✨');
         } catch (error) {
           this.$message.error('获取壁纸失败：' + error.message);
