@@ -21,7 +21,7 @@ export async function onRequest(context) {
       // 获取查询参数
       const url = new URL(request.url);
       const sorting = url.searchParams.get('sorting') || randomSorting[Math.floor(Math.random() * randomSorting.length)];
-      const page = url.searchParams.get('page') || Math.floor(Math.random() * 100) + 1;
+      const page = url.searchParams.get('page') || Math.floor(Math.random() * 250) + 1;
 
       const params = new URLSearchParams({
         ...config.defaultParams,
@@ -32,7 +32,7 @@ export async function onRequest(context) {
         const randomIndex = Math.floor(Math.random() * randomTopRange.length);
         const topRange = randomTopRange[randomIndex];
         params.set('topRange', topRange);
-        params.set('page', randomIndex < 3 ? page : Math.floor(Math.random() * 20) + 1);
+        params.set('page', randomIndex < 3 ? page : Math.floor(Math.random() * 50) + 1);
       }
       if (config.apiKey) {
         params.set('apikey', config.apiKey);

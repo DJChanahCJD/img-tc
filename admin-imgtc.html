@@ -703,8 +703,7 @@
           inputValidator: (value) => {
             if (!value) return '上传设置不能为空';
             try {
-              const config = JSON.parse(value);
-              if (!['None', 'Block', 'White'].includes(config.uploadListType)) {
+              if (!['None', 'Block', 'White'].includes(value)) {
                 return 'uploadListType必须为None/Block/White之一';
               }
               return true;
@@ -713,8 +712,8 @@
             }
           }
         }).then(({ value }) => {
-          this.uploadConfig.uploadListType = value.uploadListType;
-          localStorage.setItem('uploadListType', value.uploadListType);
+          this.uploadConfig.uploadListType = value;
+          localStorage.setItem('uploadListType', value);
           this.$message.success('上传设置已保存');
         });
       },
