@@ -1,11 +1,13 @@
 import { errorHandling, telemetryData } from "./utils/middleware";
 
 export async function onRequestPost(context) {
-    const { request, env } = context;
+    const { request, env} = context;
 
     try {
         const clonedRequest = request.clone();
         const formData = await clonedRequest.formData();
+        const url = new URL(request.url);
+        const ListType = url.searchParams.get('ListType');
 
         await errorHandling(context);
         telemetryData(context);
@@ -54,7 +56,7 @@ export async function onRequestPost(context) {
             await env.img_url.put(`${fileId}.${fileExtension}`, "", {
                 metadata: {
                     TimeStamp: Date.now(),
-                    ListType: "None",
+                    ListType: ListType ?? "None",
                     Label: "None",
                     liked: false,
                     fileName: fileName,
