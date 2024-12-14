@@ -22,6 +22,15 @@
           </el-tooltip>
           <input type="file" ref="fileInput" style="display: none;" multiple @change="uploadFiles">
           <div class="actions">
+            <el-tooltip content="获取随机壁纸" placement="bottom">
+              <el-button
+                type="text"
+                :loading="wallpaperLoading"
+                @click="fetchRandomWallpapers">
+                <i class="fas fa-random"></i>
+                <span>壁纸({{ pendingWallpapers.length }})</span>
+              </el-button>
+            </el-tooltip>
             <el-tooltip content="文件类型" placement="bottom">
               <el-dropdown @command="switchFileType" :hide-on-click="false">
                 <span class="el-dropdown-link"><i :class="fileTypeIcon"></i></span>
@@ -39,7 +48,7 @@
                 <el-dropdown-menu slot="dropdown">
                   <el-dropdown-item command="dateDesc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'dateDesc' }"><i class="fas fa-sort-amount-down"></i> 按时间倒序</el-dropdown-item>
                   <el-dropdown-item command="nameAsc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'nameAsc' }"><i class="fas fa-sort-alpha-up"></i> 按名称升序</el-dropdown-item>
-                  <el-dropdown-item command="sizeDesc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'sizeDesc' }"><i class="fas fa-sort-amount-down"></i> 按大小倒序</el-dropdown-item>
+                  <el-dropdown-item command="sizeDesc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'sizeDesc' }"><i class="fas fa-sort-numeric-down"></i> 按大小倒序</el-dropdown-item>
                 </el-dropdown-menu>
               </el-dropdown>
             </el-tooltip>
@@ -85,7 +94,7 @@
                 <el-dropdown-menu slot="dropdown">
                   <el-dropdown-item command="selectAllInPage"><i class="fas fa-check-square"></i> 全选当前页</el-dropdown-item>
                   <el-dropdown-item command="checkBrokenFiles"><i class="fas fa-wrench"></i> 检测失效文件</el-dropdown-item>
-                  <el-dropdown-item command="editWebsites"><i class="fas fa-edit"></i> 编辑快捷方式</el-dropdown-item>
+                  <el-dropdown-item command="settings"><i class="fas fa-gear"></i> 设置中心</el-dropdown-item>
                 </el-dropdown-menu>
               </el-dropdown>
             </el-tooltip>
@@ -290,6 +299,9 @@
           count: 0
         }
       },
+      uploadPublic: true,
+      accessPublic: true,
+      uploadLimit: 20,
       uploadConfig: {
         maxSize: 20 * 1024 * 1024,  // 最大上传20MB
         maxConcurrent: 3
@@ -305,11 +317,11 @@
       quickWebsites: [
         { name: '原版后台', url: './admin.html', icon: 'fas fa-suitcase' },
         { name: '瀑布流', url: './admin-waterfall.html', icon: 'fas fa-wind' },
-        { name: 'Movavi', url: 'https://www.movavi.com/zh/movavi-video-converter.html', icon: 'fas fa-file-video' },
-        { name: 'FreeConvert', url: 'https://www.freeconvert.com/zh/video-compressor', icon: 'fas fa-file' },
-        { name: 'YouCompress', url: 'https://www.youcompress.com/zh-cn/', icon: 'fas fa-file-zipper' },
-        { name: 'Cloudinary', url: 'https://console.cloudinary.com/', icon: 'fas fa-cloud' },
       ],
+      websiteText: '',
+      pendingWallpapers: [],
+      wallpaperLoading: false,
+      loading: true,
     },
     computed: {
       filteredTableData() {
@@ -479,7 +491,7 @@
                 this.tableData.unshift({
                   name: src.replace(/^\/file\//, ''),
                   selected: false,
-                  metadata: { TimeStamp: Date.now(), fileSize: file.size, fileName: file.name }
+                  metadata: { TimeStamp: Date.now(), fileSize: file.size }
                 });
                 successCount++;
               }
@@ -617,7 +629,6 @@
             link.click();
           }, index * 800);
         });
-        this.selectedFiles = [];
       },
       handleBatchBlockOrUnblock(type) {  // 批量加入黑/白名单
         if (type !== 'Block' && type !== 'White') { this.$message.error('无效的操作类型'); return; }
@@ -660,7 +671,7 @@
         switch (command) {
           case 'selectAllInPage': this.selectAllInPage(); break;
           case 'checkBrokenFiles': this.checkBrokenFiles(); break;
-          case 'editWebsites': this.editWebsites(); break;
+          case 'settings': this.editSettings(); break;
         }
       },
       switchFileType(type) {  // 切换文件类型
@@ -720,49 +731,161 @@
       },
       // 处理网站点击
       handleWebsite(url) { window.open(url, '_blank'); },
-      // 编辑快捷方式
-      editWebsites() {
-        const websiteText = this.quickWebsites
-          .map(site => `${site.name}|${site.url}|${site.icon}`)
-          .join('\n');
-
-        this.$prompt('', '编辑快捷方式', {
-          inputType: 'textarea',
-          inputValue: websiteText,
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          dangerouslyUseHTMLString: true,
-          customClass: 'website-edit-dialog',
-          message: `
-            <div>
-              每行一个网站，格式：名称|网址|图标类名<br>
-              图标需在 <a href="https://fontawesome.com/v6/search?m=free" target="_blank" style="color: #409EFF; text-decoration: underline">Font Awesome</a> 中选择
-            </div>
-          `,
-          inputValidator: (value) => {
-            const lines = value.split('\n');
-            if (lines.length > 10) return '不能超过10行';
-            for (let line of lines) {
-              if (!line.trim()) continue;
-              const [name, url, icon = 'fas fa-link'] = line.split('|');
-              if (!name || !url) return '名称和网址不能为空：' + line;
-              if (!(/^https?:\/\/.+/.test(url) || /^\.\/.*/.test(url))) return '网址格式错误：'+line;
-              if (!/^(fas?|fa-brands|fa-regular|fa-solid)\s+fa-[a-z0-9-]+$/.test(icon)) {
-                return '图标类名格式错误：' + line;
-              }
-            }
-            return true;
+      // 编辑设置中心
+      editSettings() {
+        // 定义设置项配置
+        const SETTINGS_CONFIG = {
+          uploadPublic: {
+            type: 'boolean',
+            label: '允许公开上传',
+            description: '是否允许未登录用户上传文件',
+            default: true,
+            validator: value => /^(true|false)$/i.test(value.trim()),
+            errorMsg: '必须是 true 或 false'
+          },
+          accessPublic: {
+            type: 'boolean',
+            label: '允许公开访问',
+            description: '是否允许未登录用户查看文件',
+            default: true,
+            validator: value => /^(true|false)$/i.test(value.trim()),
+            errorMsg: '必须是 true 或 false'
+          },
+          uploadLimit: {
+            type: 'number',
+            label: '上传大小限制',
+            description: '单个文件的最大上传大小（MB）',
+            default: 20,
+            validator: value => {
+              const num = parseInt(value);
+              return !isNaN(num) && num >= 5 && num <= 1024;
+            },
+            errorMsg: '必须是5-1024之间的数字'
+          },
+          quickWebsites: {
+            type: 'array',
+            label: '快捷方式',
+            description: '常用网站快捷方式配置',
+            default: [],
+            validator: value => {
+              const [name, url, icon = 'fas fa-link'] = value.split('|');
+              return name &&
+                     url &&
+                     (/^https?:\/\/.+/.test(url) || /^\.\/.*/.test(url)) &&
+                     /^(fas?|fa-brands|fa-regular|fa-solid)\s+fa-[a-z0-9-]+$/.test(icon);
+            },
+            errorMsg: '格式：名称|网址|图标类名'
           }
-        }).then(({ value }) => {
-          const newSites = value.split('\n')
+        };
+
+        // 生成设置说明
+        const generateSettingsGuide = () => `
+          <div class="settings-guide">
+            <div class="guide-header">
+              <span>设置说明</span>
+            </div>
+            <div class="guide-content">
+              <p>第1行：允许公开上传（是否允许���登录用户上传文件）</p>
+              <p>第2行：允许公开访问（是否允许未登录用户查看文件）</p>
+              <p>第3行：上传大小限制（单个文件的最大上传大小，MB）</p>
+              <p>后续行：快捷方式配置（格式：名称|网址|图标类名）</p>
+              <p>图标请在 <a href="https://fontawesome.com/v6/search?m=free" target="_blank">Font Awesome</a> 中选择</p>
+            </div>
+          </div>
+        `;
+
+        const formatSettingsToText = () => {
+          // 获取基本设置
+          const basicSettings = [
+            this.uploadPublic.toString(),
+            this.accessPublic.toString(),
+            this.uploadLimit.toString(),
+          ];
+
+          // 格式化快捷方式
+          const quickWebsitesText = this.quickWebsites.map(site =>
+            `${site.name}|${site.url}|${site.icon}`
+          );
+
+          // 合并所有设置并返回
+          return [...basicSettings, ...quickWebsitesText].join('\n');
+        }
+
+        // 验证设置内容
+        const validateSettings = (value) => {
+          const lines = value.split('\n');
+          const basicSettings = Object.entries(SETTINGS_CONFIG).filter(([, config]) => config.type !== 'array');
+
+          if (lines.length < basicSettings.length) {
+            return `��少需要填写前${basicSettings.length}行基本设置`;
+          }
+
+          // 验证基本设置
+          for (let i = 0; i < basicSettings.length; i++) {
+            const [key, config] = basicSettings[i];
+            if (!config.validator(lines[i])) {
+              return `第${i + 1}行：${config.errorMsg}`;
+            }
+          }
+
+          // 验证快捷方式
+          const quickWebsites = lines.slice(basicSettings.length);
+          if (quickWebsites.length > 10) {
+            return '快捷方式不能超过10个';
+          }
+
+          const websiteConfig = SETTINGS_CONFIG.quickWebsites;
+          for (let i = 0; i < quickWebsites.length; i++) {
+            const line = quickWebsites[i].trim();
+            if (!line) continue;
+            if (!websiteConfig.validator(line)) {
+              return `第${i + basicSettings.length + 1}行：${websiteConfig.errorMsg}`;
+            }
+          }
+
+          return true;
+        };
+
+        // 保存设置
+        const saveSettings = (lines) => {
+          const basicSettings = Object.keys(SETTINGS_CONFIG).filter(key => SETTINGS_CONFIG[key].type !== 'array');
+
+          // 更新基本设置
+          basicSettings.forEach((key, index) => {
+            const config = SETTINGS_CONFIG[key];
+            const value = lines[index].trim();
+            this[key] = config.type === 'boolean' ?
+              value.toLowerCase() === 'true' :
+              config.type === 'number' ? parseInt(value) : value;
+          });
+
+          // 更新快捷方式
+          this.quickWebsites = lines.slice(basicSettings.length)
             .filter(line => line.trim())
             .map(line => {
               const [name, url, icon = 'fas fa-link'] = line.split('|');
-              return { name, url, icon };
+              return {
+                name: name.trim(),
+                url: url.trim(),
+                icon: icon.trim()
+              };
             });
-          this.quickWebsites = newSites;
-          localStorage.setItem('quickWebsites', JSON.stringify(newSites));
-          this.$message.success('保存成功');
+
+          this.saveSettings();
+        };
+
+        // 显示设置对话框
+        this.$prompt('', '设置中心', {
+          inputType: 'textarea',
+          inputValue: formatSettingsToText(),
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          dangerouslyUseHTMLString: true,
+          customClass: 'settings-edit-dialog',
+          message: generateSettingsGuide(),
+          inputValidator: validateSettings
+        }).then(({ value }) => {
+          saveSettings(value.split('\n'));
         }).catch(() => {});
       },
       getFileIcon(filename) {
@@ -819,43 +942,222 @@
           })
           .catch(() => this.$message.error('修改文件名时出错，请检查网络连接'));
         }).catch(() => {});
-      }
+      },
+      // 获取设置
+      async fetchSettings() {
+        try {
+          const response = await fetch("./api/manage/settings", {
+            method: 'GET',
+            credentials: 'include'
+          });
+
+          if (response.ok) {
+            const settings = await response.json();
+            this.uploadPublic = settings.uploadPublic ?? true;
+            this.uploadLimit = settings.uploadLimit ?? 20;
+            this.quickWebsites = settings.quickWebsites ?? [
+              { name: '原版后台', url: './admin.html', icon: 'fas fa-suitcase' },
+              { name: '瀑布流', url: './admin-waterfall.html', icon: 'fas fa-wind' },
+              { name: 'Movavi', url: 'https://www.movavi.com/zh/movavi-video-converter.html', icon: 'fas fa-file-video' },
+              { name: 'FreeConvert', url: 'https://www.freeconvert.com/zh/video-compressor', icon: 'fas fa-file' },
+              { name: 'YouCompress', url: 'https://www.youcompress.com/zh-cn/', icon: 'fas fa-file-zipper' },
+              { name: 'Cloudinary', url: 'https://console.cloudinary.com/', icon: 'fas fa-cloud' }
+            ];
+          } else {
+            console.warn('使用默认设置');
+          }
+        } catch (error) {
+          console.warn('获取设置失败，使用默认值:', error);
+          // 静默失败，使用默认值
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      // 保存设置
+      async saveSettings() {
+        try {
+          const response = await fetch("./api/manage/settings", {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              uploadPublic: this.uploadPublic,
+              accessPublic: this.accessPublic,
+              uploadLimit: this.uploadLimit,
+              quickWebsites: this.quickWebsites
+            })
+          });
+
+          if (!response.ok) throw new Error('保存设置失败');
+          this.$message.success('设置已保存');
+        } catch (error) {
+          this.$message.error('保存设置失败：' + error.message);
+          throw error;
+        }
+      },
+
+      // 获取随机壁纸
+      async fetchRandomWallpapers() {
+        if (this.wallpaperLoading) return;
+
+        this.wallpaperLoading = true;
+        try {
+          const response = await fetch(`./api/wallhaven/wallpaper?count=3`);
+          const result = await response.json();
+
+          if (!result.status) {
+            throw new Error(result.message);
+          }
+
+          // 添加到待上传列表
+          this.pendingWallpapers = [
+            ...this.pendingWallpapers,
+            ...result.data.map(wp => ({
+              ...wp,
+              selected: false,
+              status: 'pending', // pending, uploading, success, error
+            }))
+          ];
+
+        } catch (error) {
+          this.$message.error('获取壁纸失败：' + error.message);
+        } finally {
+          this.wallpaperLoading = false;
+        }
+      },
+        // 上传选中的壁纸
+      async uploadSelectedWallpapers() {
+        const selected = this.pendingWallpapers.filter(wp => wp.selected);
+        if (!selected.length) {
+          this.$message.warning('请先选择要上传的壁纸');
+          return;
+        }
+
+        const loading = this.$message({
+          message: '正在上传...',
+          duration: 0
+        });
+
+        try {
+          for (const wp of selected) {
+            // 更新状态
+            wp.status = 'uploading';
+
+            try {
+              // 下载壁纸
+              const response = await fetch(wp.url);
+              const blob = await response.blob();
+              const file = new File([blob], wp.metadata.fileName, { type: blob.type });
+
+              // 上传文件
+              const formData = new FormData();
+              formData.append('file', file);
+              const uploadRes = await fetch(`${this.baseURL}/upload`, {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
+              });
+
+              if (!uploadRes.ok) {
+                throw new Error('上传失败');
+              }
+
+              wp.status = 'success';
+            } catch (error) {
+              wp.status = 'error';
+              throw error;
+            }
+          }
+
+          // 移除上传成功的壁纸
+          this.pendingWallpapers = this.pendingWallpapers.filter(
+            wp => wp.status !== 'success'
+          );
+
+          this.$message.success(`成功上传 ${selected.length} 张壁纸`);
+        } catch (error) {
+          this.$message.error('上传过程中出现错误：' + error.message);
+        } finally {
+          loading.close();
+        }
+      },
+      // 清空待上传列表
+  clearPendingWallpapers() {
+    this.$confirm('确定要清空待上传列表吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }).then(() => {
+      this.pendingWallpapers = [];
+      this.$message.success('已清空待上传列表');
+    }).catch(() => {});
+  },
     },
     mounted() {
+      // 先添加事件监听器
       window.addEventListener('resize', this.calculatePageSize);
       this.updateWindowWidth();
-      fetch("./api/manage/check", { method: 'GET', credentials: 'include' })
-        .then(response => response.text())
-        .then(result => result === "true" ? this.showLogoutButton = true : window.location.href = "./api/manage/login")
-        .catch(() => this.$message.error('同步数据时出错，请检查网络连接'));
 
-      // 获取文件列表数据
-      fetch("./api/manage/list", { method: 'GET', credentials: 'include' })
-        .then(response => response.json())
-        .then(result => {
-          console.log("result: ", result);
-          this.tableData = result.map(file => ({
-            ...file,
-            selected: false,
-            metadata: {
-              ...file.metadata,
-              liked: file.metadata.liked ?? false,
-              fileName: file.metadata.fileName ?? file.name,
-              fileSize: file.metadata.fileSize ?? 0
-            }
-          }));
-          this.updateStats();
-          // 恢复设置
-          this.sortOption = localStorage.getItem('sortOption') || this.sortOption;
-          this.sortData(this.tableData);
-          this.fileType = localStorage.getItem('fileType') || this.fileType;
-          this.switchFileType(this.fileType);
+      // 并行执行所有异步操作
+      Promise.all([
+        // 获取设置（静默失败）
+        this.fetchSettings().catch(() => {}),
+
+        // 检查登录状态
+        fetch("./api/manage/check", {
+          method: 'GET',
+          credentials: 'include'
         })
-        .catch(() => this.$message.error('同步数据时出错，请检查网络连接'));
+          .then(response => response.text())
+          .then(result => {
+            if (result === "true") {
+              this.showLogoutButton = true;
+            } else {
+              window.location.href = "./api/manage/login";
+            }
+          }).catch(() => {
+            this.$message.error('无法获取认证信息，请检查网络连接');
+          }),
 
-      if (localStorage.getItem('quickWebsites')) {
-        this.quickWebsites = JSON.parse(localStorage.getItem('quickWebsites'));
-      }
+        // 获取文件列表
+        fetch("./api/manage/list", {
+          method: 'GET',
+          credentials: 'include'
+        })
+          .then(response => response.json())
+          .then(result => {
+            this.tableData = result.map(file => ({
+              ...file,
+              selected: false,
+              metadata: {
+                liked: (file.metadata?.liked ?? false),
+                fileName: (file.metadata?.fileName ?? file.name),
+                fileSize: (file.metadata?.fileSize ?? 0),
+                ...(file.metadata || {})  // 保留其他可能的 metadata 字段
+              }
+            }));
+
+            // 更新统计信息
+            this.updateStats();
+
+            // 恢复排序设置
+            this.sortOption = localStorage.getItem('sortOption') || this.sortOption;
+            this.sortData(this.tableData);
+
+            // 恢复文件类型过滤设置
+            this.fileType = localStorage.getItem('fileType') || this.fileType;
+            this.switchFileType(this.fileType);
+          })
+      ]).catch(error => {
+        console.error('初始化失败:', error);
+        // 只在真正的错误时显示提示
+        if (error.name !== 'TypeError' || !error.message.includes('undefined')) {
+          this.$message.error('同步数据时出错，请检查网络连接');
+        }
+      });
     },
     beforeDestroy() {
       window.removeEventListener('resize', this.calculatePageSize);
