@@ -22,7 +22,6 @@ export async function onRequest(context) {
     try {
       // 获取查询参数
       const url = new URL(request.url);
-      const count = parseInt(url.searchParams.get('count')) || 3;
       const seed = url.searchParams.get('seed') || Math.random().toString(36).substring(7);
 
       // 构建API请求
@@ -30,9 +29,10 @@ export async function onRequest(context) {
         ...config.defaultParams,
         page: 1,
         seed: seed,
-        apikey: config.apiKey,
       });
-
+      if (config.apiKey) {
+        params.set('apikey', config.apiKey);
+      }
       // 请求Wallhaven API
       const response = await fetch(`${config.baseUrl}/search?${params}`);
 

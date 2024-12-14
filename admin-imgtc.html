@@ -112,7 +112,8 @@
                   <el-image :src="item.url" :preview-src-list="[item.preview]" fit="cover" lazy="true"></el-image>
                   <div class="image-overlay">
                     <div class="overlay-buttons">
-                      <el-button size="mini" type="primary" @click.stop="handleUploadWallpaper(index, item.name)">上传</el-button>
+                      <el-button size="mini" type="warning" @click.stop="handleUploadWallpaper(index, item.name)">上传</el-button>
+                      <el-button size="mini" type="primary" @click.stop="handleCopyWallpaper(index, item.name)">复制</el-button>
                     </div>
                   </div>
                 </template>
@@ -328,7 +329,6 @@
       ],
       websiteText: '',
       wallpaperLoading: false,
-      wallpaperCount: 5,
       loading: true,
     },
     computed: {
@@ -1013,7 +1013,7 @@
 
         this.wallpaperLoading = true;
         try {
-          const response = await fetch(`./api/wallheaven/wallpaper?count=${this.wallpaperCount}`);
+          const response = await fetch(`./api/wallheaven/wallpaper`);
           const result = await response.json();
 
           if (!result.status) {
@@ -1043,9 +1043,16 @@
           this.wallpaperLoading = false;
         }
       },
+      // 复制壁纸
+      async handleCopyWallpaper(index, item) {
+        const url = item.url;
+        (navigator.clipboard?.writeText(url) || this.copyToClipboardFallback(url))
+        .then(() => this.$message.success('复制成功'))
+        .catch(() => this.$message.error('复制失败'));
+      },
         // 上传选中的壁纸
       async handleUploadWallpaper(index, item) {
-        if (!item.isWallpaper) {
+        if (!item.isWallpaper??false) {
           this.$message.error('无法上传非壁纸文件');
           return;
         }
