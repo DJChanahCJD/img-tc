@@ -112,8 +112,8 @@
                   <el-image :src="item.url" :preview-src-list="[item.preview]" fit="cover" lazy="true"></el-image>
                   <div class="image-overlay">
                     <div class="overlay-buttons">
-                      <el-button size="mini" type="warning" @click.stop="handleUploadWallpaper(index, item.name)">上传</el-button>
-                      <el-button size="mini" type="primary" @click.stop="handleCopyWallpaper(index, item.name)">复制</el-button>
+                      <el-button size="mini" type="warning" @click.stop="handleUploadWallpaper(index, item)">上传</el-button>
+                      <el-button size="mini" type="primary" @click.stop="handleCopyWallpaper(index, item)">复制</el-button>
                     </div>
                   </div>
                 </template>
@@ -329,6 +329,7 @@
       ],
       websiteText: '',
       wallpaperLoading: false,
+      wallpaperPage: 1,
       loading: true,
     },
     computed: {
@@ -1013,7 +1014,7 @@
 
         this.wallpaperLoading = true;
         try {
-          const response = await fetch(`./api/wallheaven/wallpaper`);
+          const response = await fetch(`./api/wallheaven/wallpaper?page=${this.wallpaperPage}`);
           const result = await response.json();
 
           if (!result.status) {
@@ -1034,6 +1035,7 @@
           }));
 
           this.tableData.unshift(...wallpapers);
+          this.wallpaperPage++;
           console.log("wallpapers",wallpapers);
           console.log("this.tableData",this.tableData);
           this.$message.success('哇噻！好手气~✨');

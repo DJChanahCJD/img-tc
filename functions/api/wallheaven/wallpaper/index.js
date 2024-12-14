@@ -13,21 +13,22 @@ export async function onRequest(context) {
       defaultParams: {
         categories: '111',
         purity: '111',
-        sorting: 'random',
+        sorting: 'toplist',
+        topRange: '1d',
         atleast: '1920x1080',
-        ratios: '16x9,16x10,4x3',
       }
     };
 
     try {
       // 获取查询参数
       const url = new URL(request.url);
+      const page = url.searchParams.get('page') || 1;
       const seed = url.searchParams.get('seed') || Math.random().toString(36).substring(7);
 
       // 构建API请求
       const params = new URLSearchParams({
         ...config.defaultParams,
-        page: 1,
+        page: page,
         seed: seed,
       });
       if (config.apiKey) {
