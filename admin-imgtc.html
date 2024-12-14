@@ -22,6 +22,15 @@
           </el-tooltip>
           <input type="file" ref="fileInput" style="display: none;" multiple @change="uploadFiles">
           <div class="actions">
+            <el-tooltip content="获取随机壁纸" placement="bottom">
+              <el-button
+                type="text"
+                :loading="wallpaperLoading"
+                @click="fetchRandomWallpapers">
+                <i class="fas fa-random"></i>
+                <span>壁纸({{ pendingWallpapers.length }})</span>
+              </el-button>
+            </el-tooltip>
             <el-tooltip content="文件类型" placement="bottom">
               <el-dropdown @command="switchFileType" :hide-on-click="false">
                 <span class="el-dropdown-link"><i :class="fileTypeIcon"></i></span>
@@ -310,7 +319,9 @@
         { name: '瀑布流', url: './admin-waterfall.html', icon: 'fas fa-wind' },
       ],
       websiteText: '',
-      loading: true
+      pendingWallpapers: [],
+      wallpaperLoading: false,
+      loading: true,
     },
     computed: {
       filteredTableData() {
@@ -774,7 +785,7 @@
               <span>设置说明</span>
             </div>
             <div class="guide-content">
-              <p>第1行：允许公开上传（是否允许未登录用户上传文件）</p>
+              <p>第1行：允许公开上传（是否允许���登录用户上传文件）</p>
               <p>第2行：允许公开访问（是否允许未登录用户查看文件）</p>
               <p>第3行：上传大小限制（单个文件的最大上传大小，MB）</p>
               <p>后续行：快捷方式配置（格式：名称|网址|图标类名）</p>
@@ -806,7 +817,7 @@
           const basicSettings = Object.entries(SETTINGS_CONFIG).filter(([, config]) => config.type !== 'array');
 
           if (lines.length < basicSettings.length) {
-            return `至少需要填写前${basicSettings.length}行基本设置`;
+            return `��少需要填写前${basicSettings.length}行基本设置`;
           }
 
           // 验证基本设置
@@ -988,6 +999,102 @@
         }
       },
 
+      // 获取随机壁纸
+      async fetchRandomWallpapers() {
+        if (this.wallpaperLoading) return;
+
+        this.wallpaperLoading = true;
+        try {
+          const response = await fetch(`./api/wallhaven/wallpaper?count=3`);
+          const result = await response.json();
+
+          if (!result.status) {
+            throw new Error(result.message);
+          }
+
+          // 添加到待上传列表
+          this.pendingWallpapers = [
+            ...this.pendingWallpapers,
+            ...result.data.map(wp => ({
+              ...wp,
+              selected: false,
+              status: 'pending', // pending, uploading, success, error
+            }))
+          ];
+
+        } catch (error) {
+          this.$message.error('获取壁纸失败：' + error.message);
+        } finally {
+          this.wallpaperLoading = false;
+        }
+      },
+        // 上传选中的壁纸
+      async uploadSelectedWallpapers() {
+        const selected = this.pendingWallpapers.filter(wp => wp.selected);
+        if (!selected.length) {
+          this.$message.warning('请先选择要上传的壁纸');
+          return;
+        }
+
+        const loading = this.$message({
+          message: '正在上传...',
+          duration: 0
+        });
+
+        try {
+          for (const wp of selected) {
+            // 更新状态
+            wp.status = 'uploading';
+
+            try {
+              // 下载壁纸
+              const response = await fetch(wp.url);
+              const blob = await response.blob();
+              const file = new File([blob], wp.metadata.fileName, { type: blob.type });
+
+              // 上传文件
+              const formData = new FormData();
+              formData.append('file', file);
+              const uploadRes = await fetch(`${this.baseURL}/upload`, {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
+              });
+
+              if (!uploadRes.ok) {
+                throw new Error('上传失败');
+              }
+
+              wp.status = 'success';
+            } catch (error) {
+              wp.status = 'error';
+              throw error;
+            }
+          }
+
+          // 移除上传成功的壁纸
+          this.pendingWallpapers = this.pendingWallpapers.filter(
+            wp => wp.status !== 'success'
+          );
+
+          this.$message.success(`成功上传 ${selected.length} 张壁纸`);
+        } catch (error) {
+          this.$message.error('上传过程中出现错误：' + error.message);
+        } finally {
+          loading.close();
+        }
+      },
+      // 清空待上传列表
+  clearPendingWallpapers() {
+    this.$confirm('确定要清空待上传列表吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }).then(() => {
+      this.pendingWallpapers = [];
+      this.$message.success('已清空待上传列表');
+    }).catch(() => {});
+  },
     },
     mounted() {
       // 先添加事件监听器
