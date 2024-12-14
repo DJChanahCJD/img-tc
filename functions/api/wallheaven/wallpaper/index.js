@@ -21,7 +21,7 @@ export async function onRequest(context) {
       // 获取查询参数
       const url = new URL(request.url);
       const sorting = url.searchParams.get('sorting') || randomSorting[Math.floor(Math.random() * randomSorting.length)];
-      const page = url.searchParams.get('page') || Math.floor(Math.random() * 250) + 1;
+      const page = Math.floor(Math.random() * 250) + 1;
 
       const params = new URLSearchParams({
         ...config.defaultParams,
