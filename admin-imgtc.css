@@ -446,3 +446,7 @@ body {
 .website-edit-dialog .el-textarea__inner{
   height: 240px !important;
 }
+.wallpaper-settings-dialog .el-textarea__inner{
+  height: 240px !important;
+}
+

@@ -708,27 +708,19 @@
           inputValue: JSON.stringify(wallpaperSettings, null, 2),
           confirmButtonText: '确定',
           cancelButtonText: '取消',
+          customClass: 'wallpaper-settings-dialog',
           dangerouslyUseHTMLString: true,
           message: `
             <div style="text-align: left; margin-bottom: 10px;">
               <h4>Wallheaven壁纸设置格式说明：</h4>
               <ul style="padding-left: 20px;">
-                <li><b>q</b>: "搜索关键词" - 支持以下格式:
-                  <br>- 普通关键词: landscape
-                  <br>- 标签搜索: tag:nature
-                  <br>- 排除标签: -tag:city
-                  <br>- 精确标签: +tag:mountain
-                  <br>- 用户上传: @username
-                  <br>- 类型搜索: type:png/jpg
-                  <br>- 相似图片: like:wallpaper_id</li>
-                <li><b>categories</b>: "xxx" - 分类(general/anime/people)
-                  <br>示例："111" 表示全选，"100" 只选general</li>
-                <li><b>purity</b>: "xxx" - 分级(sfw/sketchy/nsfw)
-                  <br>示例："111" 表示全选，"100" 只选sfw</li>
-                <li><b>sorting</b>: 排序方式
-                  <br>可选值: date_added/relevance/random/views/favorites/toplist</li>
-                <li><b>pageRange</b>: "起始页-结束页" - 页码范围
-                  <br>示例："1-100" 表示在1-100页中随机</li>
+                <li><b>q</b>: 搜索关键词
+                  <br>landscape(普通) | tag:nature(标签) | -tag:city(排除)
+                  <br>+tag:mountain(精确) | @username(用户) | type:png(类型)</li>
+                <li><b>categories</b>: 分类代码(111全选,100仅general)</li>
+                <li><b>purity</b>: 分级代码(111全选,100仅sfw)</li>
+                <li><b>sorting</b>: 排序(date_added/random/views等)</li>
+                <li><b>pageRange</b>: 页码范围(如1-100)</li>
               </ul>
             </div>
           `,
@@ -762,7 +754,7 @@
                 return 'pageRange 必须是形如 "1-100" 的格式';
               }
               const [start, end] = settings.pageRange.split('-').map(Number);
-              if (start >= end || start < 1) {
+              if (start > end || start < 1) {
                 return 'pageRange 必须有效，且起始页必须大于0';
               }
 
