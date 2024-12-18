@@ -15,24 +15,33 @@ export async function onRequest(context) {
         purity: '111',
       }
     };
-    const randomSorting = ['favorites', 'toplist', 'views'];
+    const randomSorting = ['favorites', 'toplist', 'views', 'random'];
     const randomTopRange = ['1d', '3d', '1w', '1M', '3M', '6M', '1y'];
     try {
       // 获取查询参数
       const url = new URL(request.url);
       const sorting = url.searchParams.get('sorting') || randomSorting[Math.floor(Math.random() * randomSorting.length)];
-      const page = Math.floor(Math.random() * 250) + 1;
+      const pageRange = url.searchParams.get('pageRange') || '1-1024';
+      const categories = url.searchParams.get('categories') || '111';
+      const purity = url.searchParams.get('purity') || '111';
+      const [start, end] = pageRange.split('-').map(Number);
+      const page = Math.floor(Math.random() * (end - start + 1)) + start;
+      const q = url.searchParams.get('q') || '';
 
       const params = new URLSearchParams({
         ...config.defaultParams,
         page: page,
         sorting: sorting,
+        categories: categories,
+        purity: purity,
+        q: q,
       });
       if (sorting === 'toplist') {
         const randomIndex = Math.floor(Math.random() * randomTopRange.length);
         const topRange = randomTopRange[randomIndex];
         params.set('topRange', topRange);
-        params.set('page', randomIndex < 3 ? page : Math.floor(Math.random() * 50) + 1);
+      } else if (sorting === 'random') {
+        params.set('seed', Date.now());
       }
       if (config.apiKey) {
         params.set('apikey', config.apiKey);

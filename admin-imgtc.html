@@ -95,6 +95,7 @@
                   <el-dropdown-item command="checkBrokenFiles"><i class="fas fa-wrench"></i> 检测失效文件</el-dropdown-item>
                   <el-dropdown-item command="editUploadSettings"><i class="fas fa-gear"></i> 上传设置</el-dropdown-item>
                   <el-dropdown-item command="editWebsites"><i class="fas fa-edit"></i> 编辑快捷方式</el-dropdown-item>
+                  <el-dropdown-item command="editWallpaperSettings"><i class="fas fa-image"></i> 壁纸设置</el-dropdown-item>
                 </el-dropdown-menu>
               </el-dropdown>
             </el-tooltip>
@@ -685,7 +686,102 @@
           case 'checkBrokenFiles': this.checkBrokenFiles(); break;
           case 'editUploadSettings': this.editUploadSettings(); break;
           case 'editWebsites': this.editWebsites(); break;
+          case 'editWallpaperSettings': this.editWallpaperSettings(); break;
         }
+      },
+      editWallpaperSettings() {
+        const defaultSettings = {
+          categories: '111', // general/anime/people
+          purity: '111',     // sfw/sketchy/nsfw
+          sorting: 'random', // date_added/relevance/random/views/favorites/toplist
+          pageRange: '1-100',     // 页码范围
+          q: '',            // 搜索关键词
+        };
+
+        const wallpaperSettings = JSON.parse(
+          localStorage.getItem('wallpaperSettings') ||
+          JSON.stringify(defaultSettings)
+        );
+
+        this.$prompt('', 'Wallheaven壁纸设置', {
+          inputType: 'textarea',
+          inputValue: JSON.stringify(wallpaperSettings, null, 2),
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          dangerouslyUseHTMLString: true,
+          message: `
+            <div style="text-align: left; margin-bottom: 10px;">
+              <h4>Wallheaven壁纸设置格式说明：</h4>
+              <ul style="padding-left: 20px;">
+                <li><b>q</b>: "搜索关键词" - 支持以下格式:
+                  <br>- 普通关键词: landscape
+                  <br>- 标签搜索: tag:nature
+                  <br>- 排除标签: -tag:city
+                  <br>- 精确标签: +tag:mountain
+                  <br>- 用户上传: @username
+                  <br>- 类型搜索: type:png/jpg
+                  <br>- 相似图片: like:wallpaper_id</li>
+                <li><b>categories</b>: "xxx" - 分类(general/anime/people)
+                  <br>示例："111" 表示全选，"100" 只选general</li>
+                <li><b>purity</b>: "xxx" - 分级(sfw/sketchy/nsfw)
+                  <br>示例："111" 表示全选，"100" 只选sfw</li>
+                <li><b>sorting</b>: 排序方式
+                  <br>可选值: date_added/relevance/random/views/favorites/toplist</li>
+                <li><b>pageRange</b>: "起始页-结束页" - 页码范围
+                  <br>示例："1-100" 表示在1-100页中随机</li>
+              </ul>
+            </div>
+          `,
+          inputValidator: (value) => {
+            try {
+              const settings = JSON.parse(value);
+
+              // 验证 q (搜索关键词可以为空)
+              if (settings.q && typeof settings.q !== 'string') {
+                return 'q 必须是字符串类型';
+              }
+
+              // 验证 categories
+              if (!/^[01]{3}$/.test(settings.categories)) {
+                return 'categories 必须是3位0/1组成的字符串';
+              }
+
+              // 验证 purity
+              if (!/^[01]{3}$/.test(settings.purity)) {
+                return 'purity 必须是3位0/1组成的字符串';
+              }
+
+              // 验证 sorting
+              const validSorting = ['date_added', 'relevance', 'random', 'views', 'favorites', 'toplist'];
+              if (!validSorting.includes(settings.sorting)) {
+                return 'sorting 必须是有效的排序方式';
+              }
+
+              // 验证 pageRange
+              if (!/^\d+-\d+$/.test(settings.pageRange)) {
+                return 'pageRange 必须是形如 "1-100" 的格式';
+              }
+              const [start, end] = settings.pageRange.split('-').map(Number);
+              if (start >= end || start < 1) {
+                return 'pageRange 必须有效，且起始页必须大于0';
+              }
+
+              return true;
+            } catch (e) {
+              return 'JSON格式错误';
+            }
+          }
+        }).then(({ value }) => {
+          try {
+            const settings = JSON.parse(value);
+            localStorage.setItem('wallpaperSettings', JSON.stringify(settings));
+            this.$message.success('Wallheaven壁纸设置已保存');
+          } catch (e) {
+            this.$message.error('保存设置时出错');
+          }
+        }).catch(() => {
+          this.$message.info('已取消设置');
+        });
       },
       editUploadSettings() {
         const uploadListType = localStorage.getItem('uploadListType') || this.uploadConfig.uploadListType;
@@ -880,7 +976,8 @@
 
         this.wallpaperLoading = true;
         try {
-          const response = await fetch(`./api/wallheaven/wallpaper`);
+          const settings = JSON.parse(localStorage.getItem('wallpaperSettings') || JSON.stringify(defaultSettings));
+          const response = await fetch(`./api/wallheaven/wallpaper?${new URLSearchParams(settings).toString()}`);
           const result = await response.json();
 
           if (!result.status) {
