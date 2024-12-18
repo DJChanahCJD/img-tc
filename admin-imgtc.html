@@ -691,11 +691,11 @@
       },
       editWallpaperSettings() {
         const defaultSettings = {
+          q: '',            // 搜索关键词
           categories: '111', // general/anime/people
           purity: '111',     // sfw/sketchy/nsfw
           sorting: 'random', // date_added/relevance/random/views/favorites/toplist
           pageRange: '1-100',     // 页码范围
-          q: '',            // 搜索关键词
         };
 
         const wallpaperSettings = JSON.parse(
@@ -717,9 +717,9 @@
                 <li><b>q</b>: 搜索关键词
                   <br>landscape(普通) | tag:nature(标签) | -tag:city(排除)
                   <br>+tag:mountain(精确) | @username(用户) | type:png(类型)</li>
-                <li><b>categories</b>: 分类代码(111全选,100仅general)</li>
-                <li><b>purity</b>: 分级代码(111全选,100仅sfw)</li>
-                <li><b>sorting</b>: 排序(date_added/random/views等)</li>
+                <li><b>categories</b>: 分类代码(general/anime/people/111全选)</li>
+                <li><b>purity</b>: 分级代码(sfw/sketchy/nsfw/111全选)</li>
+                <li><b>sorting</b>: 排序(date_added/random/views/favorites/toplist)</li>
                 <li><b>pageRange</b>: 页码范围(如1-100)</li>
               </ul>
             </div>
@@ -727,6 +727,10 @@
           inputValidator: (value) => {
             try {
               const settings = JSON.parse(value);
+
+              // 验证行数
+              const lines = value.split('\n');
+              if (lines.length > 10) return '不能超过10行';
 
               // 验证 q (搜索关键词可以为空)
               if (settings.q && typeof settings.q !== 'string') {
